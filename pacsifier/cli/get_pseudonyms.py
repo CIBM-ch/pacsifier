@@ -182,8 +182,11 @@ def generate_csv_with_pseudonyms_and_day_shifts(queryfile: str, pseudonyms: dict
     query_table = read_csv(queryfile, dtype=str).fillna("")
 
     # Add two new columns for pseudonyms and day shifts
-    query_table["NewPseudonym"] = query_table["PatientID"].map(pseudonyms)
-    query_table["DayShift"] = query_table["PatientID"].map(day_shifts)
+    # Adding "sub-" as prefix for all patients to have a match!
+    tmp={}
+    tmp["PatientID"] = query_table["PatientID"].apply(lambda x: f"sub-{x}")
+    query_table["NewPseudonym"] = tmp["PatientID"].map(pseudonyms)
+    query_table["DayShift"] = tmp["PatientID"].map(day_shifts)
 
     # Define the output CSV path
     output_csv = os.path.join(output_dir, "log_get_pseudonyms.csv")
@@ -256,6 +259,34 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def split_deid_query_json_in_batch(deid_query_json, batch_size):
+    """Split the patients provided in parameter in several batch of batch_size length.
+
+        Args:
+            deid_query_json: dictionary loaded from the deid json file
+            batch_size: The size of one batch
+
+        """
+    patient_id_list = deid_query_json["PatientIDList"]
+    batches = []
+
+    nbr_patient_in_list = 0
+    for patient in patient_id_list:
+        if nbr_patient_in_list == 0:
+            batch = {}
+            batch["project"]=deid_query_json["project"]
+            batch["PatientIDList"] = []
+
+        batch["PatientIDList"].append(patient)
+        nbr_patient_in_list = nbr_patient_in_list + 1
+        if nbr_patient_in_list >= batch_size:
+            batches.append(batch)
+            nbr_patient_in_list = 0
+    if len(batch["PatientIDList"]) > 0:
+        batches.append(batch)
+    return batches
+
+
 def main():
     """Main function of the script."""
     # Create parser object and parse command line arguments
@@ -297,11 +328,43 @@ def main():
         # Convert the queryfile to json format.
         deid_query_json = convert_csv_to_deid_json(query_file, args.project_name)
 
-        # Get the new pseudonyms
-        json_pseudo_response = get_deid_pseudonyms(deid_parameters, deid_query_json)
+        #Informing the user about the uniqueness of the patients provided in parameter
+        patient_id_list = deid_query_json["PatientIDList"]
+        print(f"There are {len(patient_id_list)} patients to process")
+        unique_patient_id_list = []
+        for patient in patient_id_list:
+            if patient not in unique_patient_id_list:
+                unique_patient_id_list.append(patient)
+        print(f"And only {len(unique_patient_id_list)} unique patients")
 
-        # Get day shift
-        json_day_shift_response = get_deid_day_shifts(deid_parameters, deid_query_json)
+        # Preparing the JSON in multiple batch size if the number of patients is more than 500
+        deid_query_json_batch = split_deid_query_json_in_batch(deid_query_json,500)
+
+        ## Get the new pseudonyms
+        response_pseudo = []
+        for batch in deid_query_json_batch:
+            response_pseudo.append(get_deid_pseudonyms(deid_parameters, batch))
+
+        # merging data
+        json_pseudo_response = {}
+        for item in response_pseudo:
+            json_pseudo_response.update(json.loads(item))
+
+        #Conversion to string
+        json_pseudo_response = json.dumps(json_pseudo_response)
+
+        ## Get day shift
+        response_day = []
+        for batch in deid_query_json_batch :
+            response_day.append( get_deid_day_shifts(deid_parameters, batch))
+
+        #merging data
+        json_day_shift_response = {}
+        for item in response_day:
+            json_day_shift_response.update(json.loads(item))
+
+        # Conversion to string
+        json_day_shift_response = json.dumps(json_day_shift_response)
 
         # Generate the CSV file with original query data, new pseudonyms, and day shifts
         generate_csv_with_pseudonyms_and_day_shifts(
@@ -347,6 +410,7 @@ def main():
     )
     with open(json_pseudo_response_path, "w") as f:
         f.write(json_pseudo_response)
+    print(f"{json_pseudo_response_path} written")
 
     # Save the day shifts to a json file.
     json_day_shift_response_path = os.path.normpath(
@@ -354,6 +418,7 @@ def main():
     )
     with open(json_day_shift_response_path, "w") as f:
         f.write(json_day_shift_response)
+    print(f"{json_day_shift_response_path} written")
 
     print("Done!")
 
