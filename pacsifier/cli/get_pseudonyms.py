@@ -31,9 +31,13 @@ Example usage:
 """
 
 import ast
-import sys, os, argparse
-import json, csv, requests
-from typing import Dict, Any
+import sys
+import os
+import argparse
+import json
+import csv
+import requests
+from typing import Dict, Any, List
 import numpy as np
 from pandas import read_csv
 from pacsifier.cli.pacsifier import check_query_table_allowed_filters
@@ -55,7 +59,7 @@ def check_config_file_deid(config_file: Dict[str, str]) -> None:
         )
 
 
-def convert_csv_to_deid_json(queryfile: str, project_name: str) -> Any:
+def convert_csv_to_deid_json(queryfile: str, project_name: str) -> Dict[str, Any]:
     """Convert PACSIFIER query to json format the de-ID API can understand.
 
     Args:
@@ -69,7 +73,7 @@ def convert_csv_to_deid_json(queryfile: str, project_name: str) -> Any:
     json_new_str = '{"project": "' + project_name + '", "PatientIDList": ['
     patient_list_str = ""
 
-    with open(queryfile, newline="",encoding='UTF-8-sig') as csvfile:
+    with open(queryfile, newline="", encoding='UTF-8-sig') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             if row["PatientID"] != "":
@@ -87,7 +91,7 @@ def convert_csv_to_deid_json(queryfile: str, project_name: str) -> Any:
     return json.loads(json_new_str)
 
 
-def get_deid_pseudonyms(deid_parameters: dict, query_json: dict) -> None:
+def get_deid_pseudonyms(deid_parameters: Dict[str, str], query_json: Dict[str, Any]) -> str:
     """Run the de-ID request and return the response as a json.
 
     Args:
@@ -116,7 +120,7 @@ def get_deid_pseudonyms(deid_parameters: dict, query_json: dict) -> None:
     return json_resp
 
 
-def get_deid_day_shifts(deid_parameters: dict, query_json: dict) -> None:
+def get_deid_day_shifts(deid_parameters: Dict[str, str], query_json: Dict[str, Any]) -> str:
     """Run the de-ID request for day shifts and return the response as a json.
 
     Args:
@@ -143,11 +147,11 @@ def get_deid_day_shifts(deid_parameters: dict, query_json: dict) -> None:
     )
 
     resp = ast.literal_eval(response.text)
-    
-    #force day shift in integer for tml compatibility (if provided in str)
+
+    # Force day shift in integer for tml compatibility (if provided in str)
     for key in resp.keys():
         resp[key] = int(resp[key])
-    
+
     json_resp = json.dumps(resp, indent=4)
 
     return json_resp
@@ -169,7 +173,9 @@ def check_queryfile_content(queryfile: str) -> None:
     check_query_table_allowed_filters(query_table)
 
 
-def generate_csv_with_pseudonyms_and_day_shifts(queryfile: str, pseudonyms: dict, day_shifts: dict, output_dir: str) -> None:
+def generate_csv_with_pseudonyms_and_day_shifts(
+    queryfile: str, pseudonyms: Dict[str, str], day_shifts: Dict[str, int], output_dir: str
+) -> None:
     """Create a CSV file with the original query file columns, new pseudonyms, and day shifts.
 
     Args:
@@ -183,7 +189,7 @@ def generate_csv_with_pseudonyms_and_day_shifts(queryfile: str, pseudonyms: dict
 
     # Add two new columns for pseudonyms and day shifts
     # Adding "sub-" as prefix for all patients to have a match!
-    tmp={}
+    tmp = {}
     tmp["PatientID"] = query_table["PatientID"].apply(lambda x: f"sub-{x}")
     query_table["NewPseudonym"] = tmp["PatientID"].map(pseudonyms)
     query_table["DayShift"] = tmp["PatientID"].map(day_shifts)
@@ -195,7 +201,7 @@ def generate_csv_with_pseudonyms_and_day_shifts(queryfile: str, pseudonyms: dict
     query_table.to_csv(output_csv, index=False)
 
     print(f"CSV with new pseudonyms and day shifts saved to: {output_csv}")
-    
+
 
 def get_parser() -> argparse.ArgumentParser:
     """Get parser for command line arguments."""
@@ -206,8 +212,9 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--mode",
         "-m",
-        help='Mode of operation: use de-ID API to get new pseudonyms and day shifts ("de-id") '
-        'or use a custom mapping file in CSV format that specifies the new pseudonyms ("custom")',
+        help='Mode of operation: use de-ID API to get new pseudonyms and day shifts '
+        '("de-id") or use a custom mapping file in CSV format that specifies the new '
+        'pseudonyms ("custom")',
         choices=["de-id", "custom"],
         default="de-id",
     )
@@ -227,15 +234,16 @@ def get_parser() -> argparse.ArgumentParser:
         "--mappingfile",
         "-mf",
         help="Path to custom mapping file in CSV format (required for --mode custom). "
-        "The file is expected to have no header and two columns: the first column is the old pseudonym, "
-        "the second column is the new pseudonym. The file should not contain any empty cells.",
+        "The file is expected to have no header and two columns: the first column is the "
+        "old pseudonym, the second column is the new pseudonym. The file should not "
+        "contain any empty cells.",
         required="--mode custom" in sys.argv,
     )
     parser.add_argument(
         "--shift-days",
         action="store_true",
-        help="Generate random day shifts for all pseudonyms in the +- 30 days range (employed for --mode custom). "
-        "If not specified, day shifts are set to 0.",
+        help="Generate random day shifts for all pseudonyms in the +- 30 days range "
+        "(employed for --mode custom). If not specified, day shifts are set to 0.",
     )
     parser.add_argument(
         "--project_name",
@@ -259,22 +267,31 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def split_deid_query_json_in_batch(deid_query_json, batch_size):
+def split_deid_query_json_in_batch(
+    deid_query_json: Dict[str, Any], batch_size: int = 500
+) -> List[Dict[str, Any]]:
     """Split the patients provided in parameter in several batch of batch_size length.
 
         Args:
             deid_query_json: dictionary loaded from the deid json file
             batch_size: The size of one batch
 
+        Returns:
+            List of dictionaries, each containing a batch of patients with the project information
         """
     patient_id_list = deid_query_json["PatientIDList"]
     batches = []
 
+    # Handle empty patient list
+    if not patient_id_list:
+        return batches
+
     nbr_patient_in_list = 0
+    batch = None
     for patient in patient_id_list:
         if nbr_patient_in_list == 0:
             batch = {}
-            batch["project"]=deid_query_json["project"]
+            batch["project"] = deid_query_json["project"]
             batch["PatientIDList"] = []
 
         batch["PatientIDList"].append(patient)
@@ -282,8 +299,12 @@ def split_deid_query_json_in_batch(deid_query_json, batch_size):
         if nbr_patient_in_list >= batch_size:
             batches.append(batch)
             nbr_patient_in_list = 0
-    if len(batch["PatientIDList"]) > 0:
+            batch = None
+
+    # Add the last batch if it has patients
+    if batch is not None and len(batch["PatientIDList"]) > 0:
         batches.append(batch)
+
     return batches
 
 
@@ -307,7 +328,7 @@ def main():
             sys.exit(1)
 
         # Read and validate config file for deid parameters.
-        with open(config_path) as f:
+        with open(config_path, encoding='utf-8') as f:
             try:
                 deid_parameters = json.load(f)
             except json.JSONDecodeError:
@@ -328,7 +349,7 @@ def main():
         # Convert the queryfile to json format.
         deid_query_json = convert_csv_to_deid_json(query_file, args.project_name)
 
-        #Informing the user about the uniqueness of the patients provided in parameter
+        # Informing the user about the uniqueness of the patients provided in parameter
         patient_id_list = deid_query_json["PatientIDList"]
         print(f"There are {len(patient_id_list)} patients to process")
         unique_patient_id_list = []
@@ -338,27 +359,27 @@ def main():
         print(f"And only {len(unique_patient_id_list)} unique patients")
 
         # Preparing the JSON in multiple batch size if the number of patients is more than 500
-        deid_query_json_batch = split_deid_query_json_in_batch(deid_query_json,500)
+        deid_query_json_batch = split_deid_query_json_in_batch(deid_query_json)
 
-        ## Get the new pseudonyms
+        # Get the new pseudonyms
         response_pseudo = []
         for batch in deid_query_json_batch:
             response_pseudo.append(get_deid_pseudonyms(deid_parameters, batch))
 
-        # merging data
+        # Merging data
         json_pseudo_response = {}
         for item in response_pseudo:
             json_pseudo_response.update(json.loads(item))
 
-        #Conversion to string
+        # Conversion to string
         json_pseudo_response = json.dumps(json_pseudo_response)
 
-        ## Get day shift
+        # Get day shift
         response_day = []
-        for batch in deid_query_json_batch :
-            response_day.append( get_deid_day_shifts(deid_parameters, batch))
+        for batch in deid_query_json_batch:
+            response_day.append(get_deid_day_shifts(deid_parameters, batch))
 
-        #merging data
+        # Merging data
         json_day_shift_response = {}
         for item in response_day:
             json_day_shift_response.update(json.loads(item))
@@ -408,7 +429,7 @@ def main():
     json_pseudo_response_path = os.path.normpath(
         os.path.join(output_dir, f"new_ids_{args.project_name}.json")
     )
-    with open(json_pseudo_response_path, "w") as f:
+    with open(json_pseudo_response_path, "w", encoding='utf-8') as f:
         f.write(json_pseudo_response)
     print(f"{json_pseudo_response_path} written")
 
@@ -416,7 +437,7 @@ def main():
     json_day_shift_response_path = os.path.normpath(
         os.path.join(output_dir, f"day_shift_{args.project_name}.json")
     )
-    with open(json_day_shift_response_path, "w") as f:
+    with open(json_day_shift_response_path, "w", encoding='utf-8') as f:
         f.write(json_day_shift_response)
     print(f"{json_day_shift_response_path} written")
 
