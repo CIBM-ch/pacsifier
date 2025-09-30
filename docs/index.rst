@@ -64,6 +64,7 @@ Contents
    :caption: User Documentation
 
    usage
+   docker_wrappers
 
 .. _developer-docs:
 

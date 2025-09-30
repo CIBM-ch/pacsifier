@@ -220,6 +220,140 @@ conda activate pacsifier_minimal
 2. **Run PACSIFIER:**
 See the section `Running Queries`.
 
+# Docker Wrapper Scripts
+
+PACSIFIER includes convenient Docker wrapper scripts that allow users to run CLI commands via Docker without needing to remember complex `docker run` command syntax. These wrappers handle volume mounting and Docker configuration automatically.
+
+## Available Wrapper Scripts
+
+The following Docker wrapper scripts are available:
+
+- `docker_pacsman`: Docker wrapper for the main `pacsifier` command
+- `docker_get_pseudonyms`: Docker wrapper for `pacsifier-get-pseudonyms`
+- `docker_add_karnak_tags`: Docker wrapper for `pacsifier-add-karnak-tags`
+- `docker_anonymize_dicoms`: Docker wrapper for `pacsifier-anonymize`
+- `docker_extract_carestream_report`: Docker wrapper for `pacsifier-extract-carestream-report`
+- `docker_move_dumps`: Docker wrapper for `pacsifier-move-csv`
+- `docker_create_dicomdir`: Docker wrapper for `pacsifier-create-dicomdir`
+
+## Configuration
+
+### Docker Image Selection
+
+By default, the wrapper scripts use the `pacsifier:latest` Docker image. You can override this in two ways:
+
+1. **Environment Variable** (recommended for persistent configuration):
+   ```bash
+   export PACSIFIER_DOCKER_IMAGE=pacsifier:1.0.0
+   ```
+
+2. **CLI Flag** (for one-time use):
+   ```bash
+   docker_pacsman --image pacsifier:1.0.0 -c config.json ...
+   ```
+
+## Usage Examples
+
+### docker_pacsman
+
+Run the main PACSIFIER command:
+
+```bash
+docker_pacsman -c config.json -i -q query.csv -d /output
+```
+
+### docker_get_pseudonyms
+
+Get pseudonyms for DICOM data:
+
+```bash
+docker_get_pseudonyms -i input.csv -o output.csv
+```
+
+### docker_add_karnak_tags
+
+Add Karnak tags to DICOM files:
+
+```bash
+docker_add_karnak_tags -i /path/to/input -o /path/to/output
+```
+
+### docker_anonymize_dicoms
+
+Anonymize DICOM files:
+
+```bash
+docker_anonymize_dicoms -i /path/to/input -o /path/to/output
+```
+
+### docker_extract_carestream_report
+
+Extract Carestream reports:
+
+```bash
+docker_extract_carestream_report -d /path/to/data
+```
+
+### docker_move_dumps
+
+Move CSV dump files:
+
+```bash
+docker_move_dumps -d /path/to/dicom -o /path/to/info
+```
+
+### docker_create_dicomdir
+
+Create a DICOMDIR file:
+
+```bash
+docker_create_dicomdir -o /path/to/output
+```
+
+## How It Works
+
+### Volume Mounting
+
+The wrapper scripts automatically handle Docker volume mounting. When you provide file or directory paths as arguments, the scripts:
+
+1. Convert the paths to absolute paths
+2. Mount them as Docker volumes at standardized container paths
+3. Pass the container paths to the PACSIFIER CLI commands
+
+For example, when you run:
+
+```bash
+docker_pacsman -c /home/user/config.json -q /home/user/query.csv -d /home/user/output
+```
+
+The wrapper script:
+
+1. Mounts `/home/user/config.json` as `/config.json` in the container
+2. Mounts `/home/user/query.csv` as `/query.csv` in the container
+3. Mounts `/home/user/output` as `/output` in the container
+4. Runs `pacsifier -c /config.json -q /query.csv -d /output` inside the container
+
+### Network Configuration
+
+By default, the wrapper scripts use `--net=host` to allow the containerized PACSIFIER to communicate with PACS servers on the host network.
+
+## Troubleshooting
+
+### Docker Not Found
+
+If you see an error message stating "Docker not found", ensure that:
+
+1. Docker is installed on your system
+2. Docker is in your system PATH
+3. You have the necessary permissions to run Docker commands
+
+### Image Not Found
+
+If the Docker image is not found, you may need to:
+
+1. Build the PACSIFIER Docker image first
+2. Specify the correct image name using the `--image` flag or `PACSIFIER_DOCKER_IMAGE` environment variable
+
 # Running Queries
 
 ## Command Line
