@@ -180,9 +180,8 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    in_path = args.in_folder
-    out_path = args.out_folder
-
+    in_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.in_folder)))
+    out_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.out_folder)))
     # Copying the files within in_path into out_path with new names.
     move_and_rename_files(in_path, out_path)
 

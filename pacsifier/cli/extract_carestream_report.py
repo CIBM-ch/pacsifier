@@ -239,7 +239,7 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    data_folder = args.data_folder
+    data_folder = os.path.normcase(os.path.abspath(os.path.expanduser(args.data_folder)))
     # data_folder = "/home/newuser/Downloads/tdn"  # type: str
 
     assert os.path.exists(data_folder), "Input path {} does not exist".format(

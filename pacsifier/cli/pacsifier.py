@@ -688,7 +688,7 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    config_path = args.config
+    config_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.config))) if args.config else None
     save = args.save
     info = args.info
     move = args.move
@@ -702,7 +702,7 @@ def main():
         args.config = None
         pass
 
-    output_dir = args.out_directory
+    output_dir = os.path.normcase(os.path.abspath(os.path.expanduser(args.out_directory)))
 
     # Check the case where save & move are specified (it should be only one of the two)
     if (
@@ -730,7 +730,8 @@ def main():
 
         # Read / parse the query file.
         try:
-            table = read_csv(args.queryfile, dtype=str).fillna("")
+            queryfile_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.queryfile)))
+            table = read_csv(queryfile_path, dtype=str).fillna("")
         except ParserError:
             print("Invalid query file! Please check!")
             sys.exit(1)
@@ -739,11 +740,12 @@ def main():
         retrieve_dicoms_using_table(table, parameters, output_dir, save, info, move)
 
     elif args.upload:
-        if not os.path.isdir(args.upload_directory):
+        upload_directory = os.path.normcase(os.path.abspath(os.path.expanduser(args.upload_directory)))
+        if not os.path.isdir(upload_directory):
             print("The specified upload directory does not exist. Please check!")
             sys.exit(1)
 
-        upload_dicoms(args.upload_directory, parameters)
+        upload_dicoms(upload_directory, parameters)
 
 
 if __name__ == "__main__":

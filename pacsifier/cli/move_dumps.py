@@ -87,8 +87,8 @@ def main():
         parser.print_help()
         sys.exit()
 
-    dicom_path = args.data_folder
-    output_path = args.info_folder
+    dicom_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.data_folder)))
+    output_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.info_folder)))
 
     # Move csv files within dicom_path within output_path
     move(dicom_path, output_path)

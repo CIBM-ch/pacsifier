@@ -182,8 +182,8 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    data_path = os.path.normcase(os.path.abspath(args.in_folder))
-    new_ids_path = os.path.normcase(os.path.abspath(args.new_ids))
+    data_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.in_folder)))
+    new_ids_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.new_ids)))
     album_name = args.album_name
 
     if not os.path.isdir(data_path):
@@ -204,7 +204,8 @@ def main():
         sys.exit(1)
 
     if args.day_shift is not None:
-        day_shift = json.load(open(args.day_shift, "r"))
+        day_shift_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.day_shift)))
+        day_shift = json.load(open(day_shift_path, "r"))
     else:
         day_shift = {}
 

@@ -609,9 +609,9 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    data_path = os.path.normcase(os.path.abspath(args.in_folder))
-    output_folder = os.path.normcase(os.path.abspath(args.out_folder))
-    new_ids_path = os.path.normcase(os.path.abspath(args.new_ids))
+    data_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.in_folder)))
+    output_folder = os.path.normcase(os.path.abspath(os.path.expanduser(args.out_folder)))
+    new_ids_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.new_ids)))
     delete_identifiable_files = args.delete_identifiable
     remove_private_tags = args.remove_private_tags
     fuzz_acq_dates = args.fuzz_acq_dates

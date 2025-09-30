@@ -315,14 +315,14 @@ def main():
     args = parser.parse_args()
 
     # Check if the output directory exists. If not, create it.
-    output_dir = os.path.abspath(args.out_directory)
+    output_dir = os.path.normcase(os.path.abspath(os.path.expanduser(args.out_directory)))
     if not os.path.isdir(output_dir):
         print(f"Output directory does not exist! Creating {output_dir}...")
         os.makedirs(output_dir, exist_ok=True)
 
     if args.mode == "de-id":
         # Check if the config file exists.
-        config_path = os.path.abspath(args.config)
+        config_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.config)))
         if not os.path.isfile(config_path):
             print(f"Config file {config_path} does not exist!")
             sys.exit(1)
@@ -338,7 +338,7 @@ def main():
             check_config_file_deid(deid_parameters)
 
         # Check if the queryfile exists.
-        query_file = os.path.abspath(args.queryfile)
+        query_file = os.path.normcase(os.path.abspath(os.path.expanduser(args.queryfile)))
         if not os.path.isfile(query_file):
             print(f"Query file {query_file} does not exist!")
             sys.exit(1)
@@ -397,7 +397,7 @@ def main():
 
     else:
         # Read the custom mapping file.
-        mappingfile_path = os.path.abspath(args.mappingfile)
+        mappingfile_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.mappingfile)))
         if not os.path.isfile(mappingfile_path):
             print(f"Custom mapping file {mappingfile_path} does not exist!")
             sys.exit(1)
