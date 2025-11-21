@@ -45,8 +45,11 @@ def run_docker_command(command_args, additional_volumes=None, additional_args=No
     docker_image = get_docker_image_name()
 
     # Base Docker command
+    # -i: Keep STDIN open even if not attached (helps with output visibility)
+    # -e PYTHONUNBUFFERED=1: Disable Python output buffering for real-time terminal output
     docker_cmd = [
-        'docker', 'run', '--rm', '--net=host'
+        'docker', 'run', '--rm', '--net=host', '-i',
+        '-e', 'PYTHONUNBUFFERED=1'
     ]
 
     # Add additional Docker arguments if provided
@@ -63,8 +66,9 @@ def run_docker_command(command_args, additional_volumes=None, additional_args=No
     docker_cmd.extend(command_args)
 
     # Run the command
+    # Pass stdout and stderr through to ensure real-time output visibility
     try:
-        subprocess.run(docker_cmd, check=True)
+        subprocess.run(docker_cmd, check=True, stdout=None, stderr=None)
     except subprocess.CalledProcessError as e:
         print(f"Error running Docker command: {e}", file=sys.stderr)
         sys.exit(e.returncode)
