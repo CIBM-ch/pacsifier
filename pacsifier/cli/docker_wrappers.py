@@ -94,7 +94,8 @@ Examples:
     parser.add_argument('-d', '--directory', help='Output directory')
     parser.add_argument('--upload', action='store_true', help='Upload DICOM files')
     parser.add_argument('--download', action='store_true', help='Download DICOM files')
-    parser.add_argument('--resume', action='store_true', help='Resume extraction by skipping already downloaded series')
+    parser.add_argument('--resume', action='store_true',
+                        help='Resume extraction by skipping already downloaded series')
     parser.add_argument('--image',
                         help='Docker image name (overrides PACSIFIER_DOCKER_IMAGE env var)')
 
@@ -146,13 +147,31 @@ def docker_get_pseudonyms():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  docker_get_pseudonyms -i input.csv -o output.csv
-  docker_get_pseudonyms --input /path/to/input.csv --output /path/to/output.csv
+  docker_get_pseudonyms --mode de-id -c config.json -q query.csv -a ProjectName -d /output
+  docker_get_pseudonyms --mode custom -mf mapping.csv -a ProjectName -d /output --shift-days
         """
     )
 
-    parser.add_argument('-i', '--input', required=True, help='Input CSV file')
-    parser.add_argument('-o', '--output', required=True, help='Output CSV file')
+    parser.add_argument('--mode', '-m', choices=['de-id', 'custom'],
+                        default='de-id', help='Mode of operation: de-id or custom')
+    parser.add_argument('--config', '-c',
+                        help='Deidentification configuration file path '
+                        '(required for --mode de-id)')
+    parser.add_argument('--queryfile', '-q',
+                        help='Path to PACSIFIER query file '
+                        '(required for --mode de-id)')
+    parser.add_argument('--mappingfile', '-mf',
+                        help='Path to custom mapping file in CSV format '
+                        '(required for --mode custom)')
+    parser.add_argument('--shift-days', action='store_true',
+                        help='Generate random day shifts for all pseudonyms '
+                        'in the +- 30 days range')
+    parser.add_argument('--project_name', '-a', required=True,
+                        help='Name of the project in GPCR '
+                        '(may or may not correspond to Kheops album)')
+    parser.add_argument('--out_directory', '-d', required=True,
+                        help='Output directory where the pseudonyms will be saved as a json')
+    parser.add_argument('--verbose', '-v', action='store_true', help='Print verbose output')
     parser.add_argument('--image',
                         help='Docker image name (overrides PACSIFIER_DOCKER_IMAGE env var)')
 
@@ -161,13 +180,38 @@ Examples:
     if args.image:
         os.environ['PACSIFIER_DOCKER_IMAGE'] = args.image
 
-    command_args = ['pacsifier-get-pseudonyms', '-i', '/input.csv', '-o', '/output.csv']
-    command_args.extend(unknown_args)
+    # Build command arguments
+    command_args = ['pacsifier-get-pseudonyms']
 
-    volumes = [
-        f"{os.path.abspath(args.input)}:/input.csv",
-        f"{os.path.abspath(os.path.dirname(args.output))}:/output"
-    ]
+    if args.mode:
+        command_args.extend(['--mode', args.mode])
+
+    volumes = []
+
+    if args.mode == 'de-id':
+        if not args.config or not args.queryfile:
+            parser.error("--config and --queryfile are required for --mode de-id")
+        command_args.extend(['--config', '/config.json'])
+        command_args.extend(['--queryfile', '/query.csv'])
+        volumes.append(f"{os.path.abspath(args.config)}:/config.json")
+        volumes.append(f"{os.path.abspath(args.queryfile)}:/query.csv")
+    elif args.mode == 'custom':
+        if not args.mappingfile:
+            parser.error("--mappingfile is required for --mode custom")
+        command_args.extend(['--mappingfile', '/mapping.csv'])
+        volumes.append(f"{os.path.abspath(args.mappingfile)}:/mapping.csv")
+
+    if args.shift_days:
+        command_args.append('--shift-days')
+
+    command_args.extend(['--project_name', args.project_name])
+    command_args.extend(['--out_directory', '/output'])
+
+    if args.verbose:
+        command_args.append('--verbose')
+
+    volumes.append(f"{os.path.abspath(args.out_directory)}:/output")
+    command_args.extend(unknown_args)
 
     run_docker_command(command_args, additional_volumes=volumes)
 
@@ -179,13 +223,19 @@ def docker_add_karnak_tags():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  docker_add_karnak_tags -i input_dir -o output_dir
-  docker_add_karnak_tags --input /path/to/input --output /path/to/output
+  docker_add_karnak_tags -d /input -n new_ids.json -a AlbumName
+  docker_add_karnak_tags --in_folder /path/to/input --new_ids /path/to/new_ids.json
+      --album_name AlbumName --day_shift /path/to/day_shift.json
         """
     )
 
-    parser.add_argument('-i', '--input', required=True, help='Input directory')
-    parser.add_argument('-o', '--output', required=True, help='Output directory')
+    parser.add_argument('--in_folder', '-d', required=True,
+                        help='Directory to the dicom files')
+    parser.add_argument('--new_ids', '-n', required=True,
+                        help='List of new patient IDentifiers (JSON file)')
+    parser.add_argument('--day_shift', '-s', help='List of day shift per patient (JSON file)')
+    parser.add_argument('--album_name', '-a', required=True,
+                        help='Name of destination Kheops album to route the tagged study')
     parser.add_argument('--image',
                         help='Docker image name (overrides PACSIFIER_DOCKER_IMAGE env var)')
 
@@ -194,13 +244,20 @@ Examples:
     if args.image:
         os.environ['PACSIFIER_DOCKER_IMAGE'] = args.image
 
-    command_args = ['pacsifier-add-karnak-tags', '-i', '/input', '-o', '/output']
-    command_args.extend(unknown_args)
+    command_args = ['pacsifier-add-karnak-tags', '--in_folder', '/input',
+                    '--new_ids', '/new_ids.json']
 
     volumes = [
-        f"{os.path.abspath(args.input)}:/input",
-        f"{os.path.abspath(args.output)}:/output"
+        f"{os.path.abspath(args.in_folder)}:/input",
+        f"{os.path.abspath(args.new_ids)}:/new_ids.json"
     ]
+
+    if args.day_shift:
+        command_args.extend(['--day_shift', '/day_shift.json'])
+        volumes.append(f"{os.path.abspath(args.day_shift)}:/day_shift.json")
+
+    command_args.extend(['--album_name', args.album_name])
+    command_args.extend(unknown_args)
 
     run_docker_command(command_args, additional_volumes=volumes)
 
@@ -212,13 +269,26 @@ def docker_anonymize_dicoms():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  docker_anonymize_dicoms -i input_dir -o output_dir
-  docker_anonymize_dicoms --input /path/to/input --output /path/to/output
+  docker_anonymize_dicoms -d /input -o /output
+  docker_anonymize_dicoms --in_folder /path/to/input --out_folder /path/to/output
+      --new_ids /path/to/new_ids.json
+  docker_anonymize_dicoms -d /input -o /output -i -p -a
         """
     )
 
-    parser.add_argument('-i', '--input', required=True, help='Input directory')
-    parser.add_argument('-o', '--output', required=True, help='Output directory')
+    parser.add_argument('--in_folder', '-d', required=True,
+                        help='Directory to the dicom files to be anonymized')
+    parser.add_argument('--out_folder', '-o', required=True,
+                        help='Output directory where the anonymized dicoms will be saved')
+    parser.add_argument('--delete_identifiable', '-i', action='store_true',
+                        help='Delete identifiable files like Dose reports')
+    parser.add_argument('--remove_private_tags', '-p', action='store_true',
+                        help='Remove private tags')
+    parser.add_argument('--fuzz_acq_dates', '-a', action='store_true',
+                        help='Fuzz acquisition dates')
+    parser.add_argument('--new_ids', '-n', help='List of new ids (JSON file)')
+    parser.add_argument('--keep_patient_dir_names', '-k', action='store_true',
+                        help='Do not rename patient directories, keep original IDs')
     parser.add_argument('--image',
                         help='Docker image name (overrides PACSIFIER_DOCKER_IMAGE env var)')
 
@@ -227,13 +297,27 @@ Examples:
     if args.image:
         os.environ['PACSIFIER_DOCKER_IMAGE'] = args.image
 
-    command_args = ['pacsifier-anonymize', '-i', '/input', '-o', '/output']
-    command_args.extend(unknown_args)
+    command_args = ['pacsifier-anonymize', '--in_folder', '/input',
+                    '--out_folder', '/output']
 
     volumes = [
-        f"{os.path.abspath(args.input)}:/input",
-        f"{os.path.abspath(args.output)}:/output"
+        f"{os.path.abspath(args.in_folder)}:/input",
+        f"{os.path.abspath(args.out_folder)}:/output"
     ]
+
+    if args.delete_identifiable:
+        command_args.append('--delete_identifiable')
+    if args.remove_private_tags:
+        command_args.append('--remove_private_tags')
+    if args.fuzz_acq_dates:
+        command_args.append('--fuzz_acq_dates')
+    if args.new_ids:
+        command_args.extend(['--new_ids', '/new_ids.json'])
+        volumes.append(f"{os.path.abspath(args.new_ids)}:/new_ids.json")
+    if args.keep_patient_dir_names:
+        command_args.append('--keep_patient_dir_names')
+
+    command_args.extend(unknown_args)
 
     run_docker_command(command_args, additional_volumes=volumes)
 
@@ -309,12 +393,15 @@ def docker_create_dicomdir():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  docker_create_dicomdir -o output_path
-  docker_create_dicomdir --output /path/to/output
+  docker_create_dicomdir -d /input -o /output
+  docker_create_dicomdir --in_folder /path/to/input --out_folder /path/to/output
         """
     )
 
-    parser.add_argument('-o', '--output', required=True, help='Output path')
+    parser.add_argument('--in_folder', '-d', default='./data',
+                        help='Directory to the dicom files')
+    parser.add_argument('--out_folder', '-o', default='./data',
+                        help='Output directory where the dicoms and DICOMDIR will be saved')
     parser.add_argument('--image',
                         help='Docker image name (overrides PACSIFIER_DOCKER_IMAGE env var)')
 
@@ -323,11 +410,13 @@ Examples:
     if args.image:
         os.environ['PACSIFIER_DOCKER_IMAGE'] = args.image
 
-    command_args = ['pacsifier-create-dicomdir', '-o', '/output']
+    command_args = ['pacsifier-create-dicomdir', '--in_folder', '/input',
+                    '--out_folder', '/output']
     command_args.extend(unknown_args)
 
     volumes = [
-        f"{os.path.abspath(os.path.dirname(args.output))}:/output"
+        f"{os.path.abspath(args.in_folder)}:/input",
+        f"{os.path.abspath(args.out_folder)}:/output"
     ]
 
     run_docker_command(command_args, additional_volumes=volumes)
