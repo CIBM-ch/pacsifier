@@ -94,6 +94,7 @@ Examples:
     parser.add_argument('-d', '--directory', help='Output directory')
     parser.add_argument('--upload', action='store_true', help='Upload DICOM files')
     parser.add_argument('--download', action='store_true', help='Download DICOM files')
+    parser.add_argument('--resume', action='store_true', help='Resume extraction by skipping already downloaded series')
     parser.add_argument('--image',
                         help='Docker image name (overrides PACSIFIER_DOCKER_IMAGE env var)')
 
@@ -120,6 +121,8 @@ Examples:
         command_args.append('--upload')
     if args.download:
         command_args.append('--download')
+    if args.resume:
+        command_args.append('--resume')
 
     # Add any unknown arguments
     command_args.extend(unknown_args)

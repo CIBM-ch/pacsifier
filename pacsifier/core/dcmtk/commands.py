@@ -77,7 +77,7 @@ def echo(
     check_AET(server_aet, server=True)
     check_AET(aet)
 
-    echo_command = f'echoscu -ll trace --timeout {timeout} -aec "{server_aet}" -aet "{aet}" {server_address} {port}'
+    echo_command = f'echoscu -ll debug --timeout {timeout} -aec "{server_aet}" -aet "{aet}" {server_address} {port}'
 
     return run(
         query=echo_command,

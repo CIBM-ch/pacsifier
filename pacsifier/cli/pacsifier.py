@@ -227,6 +227,7 @@ def retrieve_dicoms_using_table(
     save: bool,
     info: bool,
     move: bool,
+    resume: bool = False,
 ) -> None:
     """Query and retrieve dicom images or / and  their info dumps using the input query table.
 
@@ -236,6 +237,8 @@ def retrieve_dicoms_using_table(
         output_dir: path to the output directory
         save: option to save the images
         info: option to save info dumps
+        move: option to move images to remote destination
+        resume: option to skip already downloaded series
 
     """
     pacs_server = parameters["server_address"]
@@ -396,7 +399,7 @@ def retrieve_dicoms_using_table(
             #     os.makedirs(patient_dir, exist_ok=True)
 
             if query_attributes["new_ids"] != "":
-                with open(os.path.join(patient_dir, "new_id.txt"), "w") as file:
+                with open(os.path.join(patient_dir, "new_id.txt"), "w", encoding="utf-8") as file:
                     file.write(str(query_attributes["new_ids"]))
 
             # Make a session folder for the study if the StudyDate and StudyTime are not empty
@@ -441,10 +444,24 @@ def retrieve_dicoms_using_table(
             if not os.path.isdir(patient_serie_output_dir) and (save or info):
                 os.makedirs(patient_serie_output_dir, exist_ok=True)
 
+            # Check if series already exists and resume is enabled
+            series_already_exists = False
+            if resume and save and os.path.isdir(patient_serie_output_dir):
+                # Check if directory contains DICOM files
+                dicom_files = [
+                    f for f in os.listdir(patient_serie_output_dir)
+                    if os.path.isfile(os.path.join(patient_serie_output_dir, f))
+                    and f.lower().endswith(('.dcm', '.dicom'))
+                ]
+                if dicom_files:
+                    series_already_exists = True
+                    print(f"Skipping already downloaded series: "
+                          f"{patient_serie_output_dir} ({len(dicom_files)} files)")
+
             # Retrieving files of current patient, study and serie.
             # TODO: handle and report error 'F: cannot listen on port 104, insufficient privileges' in movescu
-            if save:
-                get_res = get(
+            if save and not series_already_exists:
+                get(
                     client_aet,
                     query_attributes["StudyDate"],  # serie["StudyDate"],
                     server_address=pacs_server,
@@ -458,8 +475,8 @@ def retrieve_dicoms_using_table(
                     log_dir=os.path.join(output_dir, "logs"),
                 )
 
-            if move:
-                move_res = move_remote(
+            if move and not series_already_exists:
+                move_remote(
                     client_aet,
                     query_attributes["StudyDate"],  # serie["StudyDate"],
                     server_address=pacs_server,
@@ -474,16 +491,17 @@ def retrieve_dicoms_using_table(
 
             if info:
                 # Writing series info to csv file.
-                with open(patient_serie_output_dir + ".csv", "w") as f:
+                with open(patient_serie_output_dir + ".csv", "w", encoding="utf-8") as f:
                     w = csv.DictWriter(f, serie.keys())
                     w.writeheader()
                     w.writerow(serie)
 
             # Log entry creation
-            log_entry = {col: query_attributes[col] for col in table.columns}  # Add original query attributes
+            log_entry = {col: query_attributes[col] for col in table.columns}
             study_uid = serie["StudyInstanceUID"]
             series_number = serie["SeriesNumber"]
-            num_files_found = len(os.listdir(patient_serie_output_dir)) if os.path.isdir(patient_serie_output_dir) else 0
+            num_files_found = (len(os.listdir(patient_serie_output_dir))
+                               if os.path.isdir(patient_serie_output_dir) else 0)
 
             log_entry["StudyInstanceUID"] = study_uid
             log_entry["SeriesNumber"] = series_number
@@ -496,10 +514,10 @@ def retrieve_dicoms_using_table(
                 os.remove(current_findscu_dump_file)
 
     # Path to save the CSV file
-    log_file_path = os.path.join(output_dir, "logs","pacsifier_log.csv")
+    log_file_path = os.path.join(output_dir, "logs", "pacsifier_log.csv")
 
     # Write the log entries to a CSV file
-    with open(log_file_path, "w", newline="") as csvfile:
+    with open(log_file_path, "w", newline="", encoding="utf-8") as csvfile:
         # Define the fieldnames for the CSV (dynamic from query file + additional fields)
         fieldnames = list(table.columns) + ["StudyInstanceUID", "SeriesNumber", "FilesFound"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -610,7 +628,7 @@ def upload_dicoms(dicom_dir: str, parameters: Dict[str, str]) -> None:
                 continue
 
             # Upload the series to the PACS server
-            upload_res = upload(
+            upload(
                 client_aet,
                 series_dir,
                 server_address=pacs_server,
@@ -678,6 +696,11 @@ def get_parser() -> argparse.ArgumentParser:
         action="version",
         version=__version__,
     )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume extraction by skipping already downloaded series",
+    )
 
     return parser
 
@@ -688,21 +711,23 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    config_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.config))) if args.config else None
+    config_path = (os.path.normcase(os.path.abspath(os.path.expanduser(args.config)))
+                   if args.config else None)
     save = args.save
     info = args.info
     move = args.move
+    resume = args.resume
 
     # Reading config file.
     try:
-        with open(config_path) as f:
+        with open(config_path, encoding="utf-8") as f:
             parameters = json.load(f)
         check_config_parameters(parameters)
     except FileNotFoundError:
         args.config = None
-        pass
 
-    output_dir = os.path.normcase(os.path.abspath(os.path.expanduser(args.out_directory)))
+    output_dir = os.path.normcase(os.path.abspath(
+        os.path.expanduser(args.out_directory)))
 
     # Check the case where save & move are specified (it should be only one of the two)
     if (
@@ -730,17 +755,19 @@ def main():
 
         # Read / parse the query file.
         try:
-            queryfile_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.queryfile)))
+            queryfile_path = os.path.normcase(os.path.abspath(
+                os.path.expanduser(args.queryfile)))
             table = read_csv(queryfile_path, dtype=str).fillna("")
         except ParserError:
             print("Invalid query file! Please check!")
             sys.exit(1)
 
         check_query_table_allowed_filters(table)
-        retrieve_dicoms_using_table(table, parameters, output_dir, save, info, move)
+        retrieve_dicoms_using_table(table, parameters, output_dir, save, info, move, resume)
 
     elif args.upload:
-        upload_directory = os.path.normcase(os.path.abspath(os.path.expanduser(args.upload_directory)))
+        upload_directory = os.path.normcase(os.path.abspath(
+            os.path.expanduser(args.upload_directory)))
         if not os.path.isdir(upload_directory):
             print("The specified upload directory does not exist. Please check!")
             sys.exit(1)

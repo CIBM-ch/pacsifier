@@ -262,6 +262,12 @@ Run the main PACSIFIER command:
 docker_pacsman -c config.json -i -q query.csv -d /output
 ```
 
+Resume an interrupted extraction:
+
+```bash
+docker_pacsman -c config.json -s --resume -q query.csv -d /output
+```
+
 ### docker_get_pseudonyms
 
 Get pseudonyms for DICOM data:
@@ -369,6 +375,7 @@ To run PACSIFIER from the command line, use the following format:
 - `--queryfile` or `-q`: Specifies the path to the query file (mandatory for `--save` or `--move`).
 - `--config` or `-c`: Specifies the path to the configuration file (mandatory for query/retrieve operations).
 - `--out_directory` or `-d`: Optional. Specifies the directory where the information dumps and DICOM images will be saved.
+- `--resume`: Resume extraction by skipping already downloaded series. When enabled, PACSIFIER will check if a series directory already contains DICOM files and skip downloading them again.
 
 ### Additional Notes:
 - The command will download DICOM images by default to the directory specified with `--out_directory`. If not provided, it defaults to a `data` folder within the project.
@@ -389,6 +396,11 @@ To run PACSIFIER from the command line, use the following format:
 3. To upload DICOM images to a PACS server:
    ```bash
    python pacsifier.py --move --queryfile /path/to/my_query.csv --config /path/to/my_config.json
+   ```
+
+4. To resume an interrupted extraction (skip already downloaded series):
+   ```bash
+   python pacsifier.py --save --resume --queryfile /path/to/my_query.csv --config /path/to/my_config.json --out_directory /path/to/my_output_dir
    ```
 
 ## Query file
