@@ -141,10 +141,10 @@ def test_get_invalid_inputs(dummy_long_string):
 
 
 def test_upload_invalid_inputs(test_dir):
-    
+
     with pytest.raises(ValueError):
         upload("", os.path.join(test_dir, "test_data", "dicomseries-not-existing"))
-    
+
     with pytest.raises(ValueError):
         upload("AET", os.path.join(test_dir, "test_data", "dicomseries"), port=0)
 
@@ -152,26 +152,44 @@ def test_upload_invalid_inputs(test_dir):
         upload("AET", os.path.join(test_dir, "test_data", "dicomseries"), port=65536)
 
     with pytest.raises(ValueError):
-        upload("AET", os.path.join(test_dir, "test_data", "dicomseries"), server_address="128.132.185.16.1")
+        upload(
+            "AET", os.path.join(test_dir, "test_data", "dicomseries"),
+            server_address="128.132.185.16.1"
+        )
 
     with pytest.raises(ValueError):
-        upload("AET", os.path.join(test_dir, "test_data", "dicomseries"), server_address="128.s132.185.16")
-    
-    with pytest.raises(ValueError):
-        upload("AET", os.path.join(test_dir, "test_data", "dicomseries"), server_address="128.132..16")
-    
-    with pytest.raises(ValueError):
-        upload("AET", os.path.join(test_dir, "test_data", "dicomseries"), server_address="128.132.1855.16")
+        upload(
+            "AET", os.path.join(test_dir, "test_data", "dicomseries"),
+            server_address="128.s132.185.16"
+        )
 
     with pytest.raises(ValueError):
-        upload("AET", os.path.join(test_dir, "test_data", "dicomseries"), server_aet="dummyserverAETdummyserverAETdummyserverAET")
-    
+        upload(
+            "AET", os.path.join(test_dir, "test_data", "dicomseries"),
+            server_address="128.132..16"
+        )
+
+    with pytest.raises(ValueError):
+        upload(
+            "AET", os.path.join(test_dir, "test_data", "dicomseries"),
+            server_address="128.132.1855.16"
+        )
+
+    with pytest.raises(ValueError):
+        upload(
+            "AET", os.path.join(test_dir, "test_data", "dicomseries"),
+            server_aet="dummyserverAETdummyserverAETdummyserverAET"
+        )
+
     with pytest.raises(ValueError):
         upload("AET", os.path.join(test_dir, "test_data", "dicomseries"), server_aet="")
 
 
 def test_replace_default_parameters():
-    dummy_long_string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    dummy_long_string = (
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    )
     parameters = "88.202.185.144 104 -aec theServerAET -aet MY_AET"
     modified = "127.0.0.1 80 -aec Hello -aet Hello_Back"
 

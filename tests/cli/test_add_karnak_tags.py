@@ -18,7 +18,6 @@
 import os
 from glob import glob
 import shutil
-import sys
 import pydicom
 
 
@@ -80,9 +79,11 @@ def test_tag_all_dicoms_within_root_folder(test_dir):
                     dataset.PatientID = patient_id
                     # Update StudyDate Tag with correct VR DA format (YYYYMMDD)
                     dataset.StudyDate = str(session_folder.split("-")[1])
-                    # TODO: Update PatientID / StudyInstanceUID / SeriesInstanceUID Tag
-                    # to be able to load the different series in Weasis.
-                    # For now, we have to "remove the patient" from Weasis to load the different series.
+                    # TODO: Update PatientID / StudyInstanceUID /
+                    # SeriesInstanceUID Tag to be able to load the different
+                    # series in Weasis.
+                    # For now, we have to "remove the patient" from Weasis
+                    # to load the different series.
                     dataset.save_as(os.path.join(series_path, file))
 
     patient_codes = ["PACSIFIER1coded", "PACSIFIER2coded", "PACSIFIER3coded"]

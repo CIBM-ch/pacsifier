@@ -18,8 +18,7 @@
 import os
 import pytest
 import subprocess
-from unittest.mock import patch, MagicMock, call
-import sys
+from unittest.mock import patch, MagicMock
 
 from pacsifier.cli.docker_wrappers import (
     get_docker_image_name,
@@ -100,15 +99,15 @@ def test_run_docker_command_output_visibility_flags(mock_run):
     mock_run.assert_called_once()
     call_kwargs = mock_run.call_args[1]
     call_args = mock_run.call_args[0][0]
-    
+
     # Verify stdout and stderr are passed through (None means inherit from parent)
     assert call_kwargs.get('stdout') is None
     assert call_kwargs.get('stderr') is None
     assert call_kwargs.get('check') is True
-    
+
     # Verify -i flag is present for interactive mode
     assert '-i' in call_args
-    
+
     # Verify PYTHONUNBUFFERED environment variable is set
     assert '-e' in call_args
     env_index = call_args.index('-e')
@@ -123,12 +122,12 @@ def test_run_docker_command_python_unbuffered_position(mock_run):
     run_docker_command(['pacsifier'])
 
     call_args = mock_run.call_args[0][0]
-    
+
     # Find positions of key elements
     e_flag_index = call_args.index('-e')
     pyunbuf_index = call_args.index('PYTHONUNBUFFERED=1')
     image_index = call_args.index('pacsifier:latest')
-    
+
     # PYTHONUNBUFFERED should come right after -e
     assert pyunbuf_index == e_flag_index + 1
     # Environment variable should be set before the image
@@ -143,7 +142,7 @@ def test_run_docker_command_interactive_flag_position(mock_run):
     run_docker_command(['pacsifier'])
 
     call_args = mock_run.call_args[0][0]
-    
+
     # Verify the order: docker, run, --rm, --net=host, -i, -e, PYTHONUNBUFFERED=1
     assert call_args[0] == 'docker'
     assert call_args[1] == 'run'
@@ -413,4 +412,3 @@ def test_docker_get_pseudonyms_missing_required_args(mock_run_docker, tmp_path):
                             '-a', 'TestProject', '-d', str(output_dir)]):
         with pytest.raises(SystemExit):
             docker_get_pseudonyms()
-

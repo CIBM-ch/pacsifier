@@ -28,7 +28,8 @@ __author__ = "Translational Machine Learning Lab"
 
 __copyright__ = (
     "Copyright (C) 2018-{}, ".format(__current_year__)
-    + "University Hospital Center and University of Lausanne (UNIL-CHUV) and Contributors, All rights reserved."
+    + "University Hospital Center and University of Lausanne (UNIL-CHUV) "
+    + "and Contributors, All rights reserved."
 )
 
 __credits__ = (

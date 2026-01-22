@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Add private DICOM tags to several studies so that Karnak can de-identify them using provided patient codes and route them to the appropriate Kheops album."""
+"""Add private DICOM tags to several studies so that Karnak can de-identify them
+using provided patient codes and route them to the appropriate Kheops album."""
 
 import sys
 import pydicom
@@ -31,7 +32,8 @@ def tag_dicom_file(
     patient_shift: str,
     album_name: str,
 ) -> None:
-    """Tag the dicom image located at filename by adding patient code and Kheops album name to private tags for subsequent de-identification.
+    """Tag the dicom image located at filename by adding patient code and
+    Kheops album name to private tags for subsequent de-identification.
 
     Args:
         filename: path to dicom image
@@ -61,7 +63,8 @@ def tag_all_dicoms_within_root_folder(
     day_shift: Dict[str, str],
     album_name: str
 ) -> None:
-    """Tag all dicom images located at the datapath for Karnak, adding an album name and patientCode private tags.
+    """Tag all dicom images located at the datapath for Karnak, adding an
+    album name and patientCode private tags.
 
     Args:
         data_path: path to the dicom images
@@ -150,7 +153,11 @@ def tag_all_dicoms_within_root_folder(
 def get_parser() -> argparse.ArgumentParser:
     """Get parser object for command line arguments of the script."""
     parser = argparse.ArgumentParser(
-        description="Add private DICOM tags to several studies so that Karnak can de-identify them using provided patient codes and route them to the appropriate Kheops album."
+        description=(
+            "Add private DICOM tags to several studies so that Karnak can "
+            "de-identify them using provided patient codes and route them to "
+            "the appropriate Kheops album."
+        )
     )
 
     parser.add_argument(
@@ -193,13 +200,13 @@ def main():
     if not os.path.isfile(new_ids_path):
         print(f"New IDs file ({new_ids_path}) not found. Please check!")
         sys.exit(1)
-    
+
     try:
         new_ids = json.load(open(new_ids_path, "r"))
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError:
         print(
             f"New IDs file ({new_ids_path}) is not a valid JSON file. "
-            "Please check it! \n {e}"
+            "Please check it!"
         )
         sys.exit(1)
 

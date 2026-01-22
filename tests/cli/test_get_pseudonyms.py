@@ -170,7 +170,10 @@ def test_failure_custom_get_pseudonyms_script_no_mapping(script_runner, test_dir
             "-m",
             "custom",
             "-mf",
-            os.path.join(test_dir, "test_data", "pseudo_mapping", "pseudo_mapping_not_existing.csv"),
+            os.path.join(
+                test_dir, "test_data", "pseudo_mapping",
+                "pseudo_mapping_not_existing.csv"
+            ),
             "--project_name",
             project_name,
             "-v",
@@ -218,11 +221,13 @@ def test_generate_csv_with_pseudonyms_and_day_shifts(mock_open, mock_post, test_
     - Mock the process of reading the actual query file.
     - Call the `generate_csv_with_pseudonyms_and_day_shifts` function to generate the CSV.
     - Verify that the CSV is created at the expected path.
-    - Ensure that the content of the generated CSV matches the expected columns and data,
-      specifically that the `PatientID`, `StudyDate`, `NewPseudonym`, and `DayShift` fields are correct.
+    - Ensure that the content of the generated CSV matches the expected
+      columns and data, specifically that the `PatientID`, `StudyDate`,
+      `NewPseudonym`, and `DayShift` fields are correct.
 
-    The test uses a valid query file with a PatientID of '125' and ensures that the CSV correctly
-    maps the pseudonym 'P0001' and day shift of -5 for the corresponding patient.
+    The test uses a valid query file with a PatientID of '125' and ensures
+    that the CSV correctly maps the pseudonym 'P0001' and day shift of -5
+    for the corresponding patient.
     """
     # Define mock responses for the API
     # Note: The function now adds "sub-" prefix to PatientIDs

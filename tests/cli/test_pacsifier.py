@@ -103,7 +103,7 @@ def test_check_table(test_dir):
     valid_table = read_csv(
         os.path.join(test_dir, "test_data", "query", "query_file_valid.csv")
     ).fillna("")
-    assert check_query_table_allowed_filters(valid_table) == None
+    assert check_query_table_allowed_filters(valid_table) is None
 
 
 def test_parse_table(test_dir):
@@ -397,7 +397,10 @@ def test_resume_downloads_when_directory_empty(monkeypatch, tmp_path):
 def test_check_output_info():
     pass
 
-    # pacsifier.main(["--info", "--queryfile test.csv", "--out_directory ./tests/test_set",  "--config ./files/config.json"])
+    # pacsifier.main([
+    #     "--info", "--queryfile test.csv", "--out_directory ./tests/test_set",
+    #     "--config ./files/config.json"
+    # ])
     # subjects = glob("./test_set/*")
     # sessions = glob("./test_set/sub-*/ses-*")
     # csv_files = glob("./test_set/sub-*/ses-*/*.csv")

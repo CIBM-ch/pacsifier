@@ -56,7 +56,8 @@ def generate_new_folder_name(names: List[str] = []) -> str:
 def add_or_retrieve_name(
     current_folder: str, old_2_new: Dict[str, str]
 ) -> Tuple[str, Dict[str, str]]:
-    """Check if the current folder has had a generated new name. If that is the case, return its new name, otherwise, generate a new name.
+    """Check if the current folder has had a generated new name. If that is
+    the case, return its new name, otherwise, generate a new name.
 
     Args:
         current_folder: current folder to be considered
@@ -81,7 +82,8 @@ def add_or_retrieve_name(
 
 
 def move_and_rename_files(dicom_path: str, output_path: str) -> None:
-    """Copy all the files within the dicom hierarchy into new hierarchy with appropriate names for DICOMDIR creation.
+    """Copy all the files within the dicom hierarchy into new hierarchy with
+    appropriate names for DICOMDIR creation.
 
     Args:
         dicom_path: current folder to be considered
@@ -94,8 +96,8 @@ def move_and_rename_files(dicom_path: str, output_path: str) -> None:
     old_2_new = {}
 
     # Iterating over dicom files
-    for l in ls:
-        path = os.path.normpath(l)
+    for line in ls:
+        path = os.path.normpath(line)
         path = path.split(os.sep)
 
         dir_ = output_path
@@ -124,9 +126,10 @@ def move_and_rename_files(dicom_path: str, output_path: str) -> None:
         if not os.path.isdir(subsubsubfolder):
             os.mkdir(subsubsubfolder)
 
-        # Copying dicom files into the previously created series folder with 8 characters or less names.
+        # Copying dicom files into the previously created series folder with
+        # 8 characters or less names.
         file_name = generate_new_folder_name(names=names)
-        shutil.copyfile(l, os.path.join(subsubsubfolder, file_name))
+        shutil.copyfile(line, os.path.join(subsubsubfolder, file_name))
 
 
 def create_dicomdir(out_path: str) -> None:
@@ -143,7 +146,8 @@ def create_dicomdir(out_path: str) -> None:
     # Executing the dcmmkdir command on current path
     run(command.format("./"))
 
-    # Delete the log.txt file if it exists. (log.txt is supposed to be written in the same folder as the script after executing commands.
+    # Delete the log.txt file if it exists. (log.txt is supposed to be
+    # written in the same folder as the script after executing commands.
     # However, pointing to the out_path outputs log.txt in out_path. So, it is deleted.)
     if os.path.isfile("log.txt"):
         os.remove("log.txt")
@@ -175,7 +179,8 @@ def get_parser() -> argparse.ArgumentParser:
 
 
 def main():
-    """Main function of the script that calls :func:`move_and_rename_files` and :func:`create_dicomdir`."""
+    """Main function of the script that calls :func:`move_and_rename_files`
+    and :func:`create_dicomdir`."""
     # Create parser object and parse command line arguments
     parser = get_parser()
     args = parser.parse_args()

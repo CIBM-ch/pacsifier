@@ -23,13 +23,11 @@ import pydicom
 from datetime import datetime, timedelta
 from glob import glob
 import os
-import warnings
 from progressbar import ProgressBar
 import random
 import json
 from typing import Dict, Tuple
 import argparse
-import hashlib
 
 
 def parse_date(date: str) -> Tuple[int, int, int]:
@@ -106,7 +104,8 @@ def anonymize_dicom_file(
     delete_identifiable_files: bool = False,
     remove_private_tags: bool = False,
 ) -> None:
-    """Anonymize the dicom image located at filename by affecting  patient id, patient name and date.
+    """Anonymize the dicom image located at filename by affecting patient id,
+    patient name and date.
 
     If identifiable data is present, deletes the file.
 
@@ -114,26 +113,38 @@ def anonymize_dicom_file(
         filename: path to dicom image
         output_filename: output path of anonymized image
         PatientID: the new patientID after anonymization
-        new_StudyInstanceUID: study instance UID to be used for depersonalisation. This should be a DICOM VR UI
-        new_SeriesInstanceUID: series instance UID to be used for depersonalisation. This should be a DICOM VR UI
-        new_SOPInstanceUID: SOP instance UID to be used for depersonalisation. This should be a DICOM VR UI
+        new_StudyInstanceUID: study instance UID to be used for
+            depersonalisation. This should be a DICOM VR UI
+        new_SeriesInstanceUID: series instance UID to be used for
+            depersonalisation. This should be a DICOM VR UI
+        new_SOPInstanceUID: SOP instance UID to be used for
+            depersonalisation. This should be a DICOM VR UI
         fuzz_birthdate: if True, to fuzz the birthdate or not
-        fuzz_acqdates: if True, fuzz  acquisition-related dates including study date, InstanceCreationDate,
-            SeriesDate, AcquisitionDate, ContentDate, PerformedProcedureStepStartDate, and
-            (07a3,101b) ST (e.g. 201703251500), (07a3,1020) DA
-        fuzz_days_shift: number of days to shift dates (birth and various acquisition dates) by (can be positive or negative)
-        delete_identifiable_files: if True, delete DICOM Series which have identifiable information in the image data itself
-            (in the case of SCREEN SAVE image type for dose reports coming from the GE Revolution CT machine, which have the patient name embedded, and
-            from Toshiba/Canon Aquilion Prime, although these don't have SCREEN SAVE label in ImageType tag)
+        fuzz_acqdates: if True, fuzz acquisition-related dates including
+            study date, InstanceCreationDate, SeriesDate, AcquisitionDate,
+            ContentDate, PerformedProcedureStepStartDate, and (07a3,101b) ST
+            (e.g. 201703251500), (07a3,1020) DA
+        fuzz_days_shift: number of days to shift dates (birth and various
+            acquisition dates) by (can be positive or negative)
+        delete_identifiable_files: if True, delete DICOM Series which have
+            identifiable information in the image data itself (in the case of
+            SCREEN SAVE image type for dose reports coming from the GE
+            Revolution CT machine, which have the patient name embedded, and
+            from Toshiba/Canon Aquilion Prime, although these don't have
+            SCREEN SAVE label in ImageType tag)
         remove_private_tags: if True remove all private tags
 
     Todo:
         - Implement proper exception handling
-        - Check if resulting depersonalised StudyInstanceUID conforms to the proper VR (should be < 64 chars?)
-        - Fuzz acquisition times: InstanceCreationTime, StudyTime, Seriestime, AcquisitionTime, ContentTime,
-            TimeOfSecondaryCapture, PerformedProcedureStepStartTime (VR: TM)
-        - Replace datestring in ReferencedSOPInstanceUID and FrameOfReferenceUID too...
-        - Handle private date-containing tags? (07a3, 101b) ST(e.g. 201703251500) and  (07a3, 1020) DA
+        - Check if resulting depersonalised StudyInstanceUID conforms to the
+          proper VR (should be < 64 chars?)
+        - Fuzz acquisition times: InstanceCreationTime, StudyTime, Seriestime,
+          AcquisitionTime, ContentTime, TimeOfSecondaryCapture,
+          PerformedProcedureStepStartTime (VR: TM)
+        - Replace datestring in ReferencedSOPInstanceUID and
+          FrameOfReferenceUID too...
+        - Handle private date-containing tags? (07a3, 101b) ST(e.g. 201703251500)
+          and (07a3, 1020) DA
 
     """
     # Load the current dicom file to depersonalise
@@ -164,7 +175,6 @@ def anonymize_dicom_file(
         os.remove(filename)
     else:
         if "PatientID" in attributes:
-            old_id = dataset.PatientID
             dataset.PatientID = PatientID
 
         if "PatientName" in attributes:
@@ -224,11 +234,14 @@ def anonymize_dicom_file(
         except AttributeError:
             pass
 
-        # One of the components of the StudyInstanceUID sometimes contains the original patientID (e.g. on GE Revolution CT machines).
-        # Therefore, the original patientID should be replaced by the new anonymous one.
-        # But DICOM standard part 5 chapter 9.1 'UID encoding rules' says 'Each component of a UID is a number and
-        # shall consist of one or more digits', and 'Each component numeric value shall be encoded using the characters 0-9'
-        # So we use a numeric equivalent instead of the new_id which has no restrictions
+        # One of the components of the StudyInstanceUID sometimes contains
+        # the original patientID (e.g. on GE Revolution CT machines).
+        # Therefore, the original patientID should be replaced by the new
+        # anonymous one. But DICOM standard part 5 chapter 9.1 'UID encoding
+        # rules' says 'Each component of a UID is a number and shall consist
+        # of one or more digits', and 'Each component numeric value shall be
+        # encoded using the characters 0-9'. So we use a numeric equivalent
+        # instead of the new_id which has no restrictions
 
         if "StudyInstanceUID" in attributes:
             dataset.StudyInstanceUID = new_StudyInstanceUID
@@ -236,16 +249,19 @@ def anonymize_dicom_file(
             dataset.SeriesInstanceUID = new_SeriesInstanceUID
         if "SOPInstanceUID" in attributes:
             dataset.SOPInstanceUID = new_SOPInstanceUID
-        # make Media Storage SOP Instance UID equal to  new SOPInstanceUID.
-        # See https://dicom.nema.org/dicom/2013/output/chtml/part10/chapter_7.html
+        # make Media Storage SOP Instance UID equal to new SOPInstanceUID.
+        # See https://dicom.nema.org/dicom/2013/output/chtml/part10/
+        # chapter_7.html
         if (0x02, 0x0) in dataset.file_meta:
             dataset.file_meta[0x02, 0x03].value = new_SOPInstanceUID
-        if "ReferencedPerformedProcedureStepSequence" in attributes:
+        if ("ReferencedPerformedProcedureStepSequence" in attributes):
             del dataset.ReferencedPerformedProcedureStepSequence
 
         # we also have to fix the potentially referrring tags
-        # RequestAttributesSequence 0040,0275 is type 3, so optional, we should be able to delete it
-        # ReferencedStudySequence 0008,1110 is type 3 in GENERAL STUDY MODULE ATTRIBUTES (type 2 in other modules), so we could also delete it
+        # RequestAttributesSequence 0040,0275 is type 3, so optional, we
+        # should be able to delete it
+        # ReferencedStudySequence 0008,1110 is type 3 in GENERAL STUDY MODULE
+        # ATTRIBUTES (type 2 in other modules), so we could also delete it
         # - RequestAttributesSequence > ReferencedStudySequence > ReferencedSOPInstanceUID
         # or
         # - RequestAttributesSequence >  StudyInstanceUID
@@ -255,16 +271,18 @@ def anonymize_dicom_file(
         # - ReferencedStudySequence > ReferencedSOPInstanceUID
         # - ReferencedPerformedProcedureStepSequence > ReferencedSOPInstanceUID
 
-        if "RequestAttributesSequence" in attributes:
+        if ("RequestAttributesSequence" in attributes):
             del dataset.RequestAttributesSequence
 
         if "ReferencedStudySequence" in attributes:
             del dataset.ReferencedStudySequence
         # 	ReferencedStudySequence = dataset.ReferencedStudySequence
-        # 	dataset.ReferencedStudySequence = ReferencedStudySequence.replace(old_id, PatientID_numstr)
+        # 	dataset.ReferencedStudySequence = ReferencedStudySequence.replace(
+        #       old_id, PatientID_numstr)
 
         if "PatientBirthDate" in attributes:
-            # Assign a new fuzzed birth date, except if patient is 90+ in which case don't touch the fake birthdate.
+            # Assign a new fuzzed birth date, except if patient is 90+ in
+            # which case don't touch the fake birthdate.
             if fuzz_birthdate:
                 fuzzed_birthdate = shift_date_by_some_days(
                     dataset.data_element("PatientBirthDate"), fuzz_days_shift
@@ -292,7 +310,8 @@ def anonymize_dicom_file(
         if fuzz_acqdates:
             if "StudyDate" not in attributes:
                 raise AssertionError(
-                    f"Cannot fuzz acquisition dates, StudyDate not in Dicom tags in file {filename}"
+                    f"Cannot fuzz acquisition dates, StudyDate not in Dicom "
+                    f"tags in file {filename}"
                 )
             fuzzed_acqdate = shift_date_by_some_days(
                 dataset.data_element("StudyDate"), fuzz_days_shift
@@ -327,17 +346,22 @@ def anonymize_all_dicoms_within_root_folder(
     remove_private_tags: bool = False,
     fuzz_acq_dates: bool = False,
 ) -> Dict[str, str]:
-    """Anonymizes all dicom images located at the datapath in the structure specified by pattern_dicom_files parameter.
+    """Anonymizes all dicom images located at the datapath in the structure
+    specified by pattern_dicom_files parameter.
 
     Args:
         output_folder: path where anonymized images will be located
         datapath: path to the dicom images
         pattern_dicom_files: (generic) path to the dicom images starting from the patient folder
-            (in a PACSIFIER dump, this would reflect e.g. `ses-20170115/0002-MPRAGE/*.dcm`)
+            (in a PACSIFIER dump, this would reflect e.g.
+            `ses-20170115/0002-MPRAGE/*.dcm`)
         new_ids: anonymous ids to be set after anonymizing the original ids
-        rename_patient_directories: rename patient directories using the anonymized ids if True
-        delete_identifiable_files: delete DICOM Series which have identifiable information in the image data itself if True
-            (in the case of screen savings coming from the GE Revolution CT machine, which have the patient name embedded for example)
+        rename_patient_directories: rename patient directories using the
+            anonymized ids if True
+        delete_identifiable_files: delete DICOM Series which have identifiable
+            information in the image data itself if True (in the case of
+            screen savings coming from the GE Revolution CT machine, which
+            have the patient name embedded for example)
         remove_private_tags: remove all private tags if True
         fuzz_acq_dates: shift the acquisition-related dates randomly by +- 30 days if True
 
@@ -358,7 +382,8 @@ def anonymize_all_dicoms_within_root_folder(
 
     if new_ids is None:
         new_ids = {
-            patients_folders[i]: str(i+1).zfill(6) for i in range(len(patients_folders))
+            patients_folders[i]: str(i + 1).zfill(6)
+            for i in range(len(patients_folders))
         }
 
     all_date_offsets = np.zeros(len(patients_folders), dtype=np.int16)
@@ -372,7 +397,8 @@ def anonymize_all_dicoms_within_root_folder(
     except KeyError as e:
         print(e)
         print(
-            "Cannot map old to new identifiers, check that keys in your new_ids file match patient names on disk"
+            "Cannot map old to new identifiers, check that keys in your "
+            "new_ids file match patient names on disk"
         )
         exit(1)
 
@@ -395,19 +421,17 @@ def anonymize_all_dicoms_within_root_folder(
 
         # generate numeric string new ID - UI VR must have only digits
         # use sha512 to be faster on 64 bits platforms and supported by python 3.5
-        new_id_numstr = str(
-            int(hashlib.sha512(new_id.encode("UTF-8")).hexdigest(), base=16)
-        )[0:16]
+        # new_id_numstr = str(
+        #     int(hashlib.sha512(new_id.encode("UTF-8")).hexdigest(), base=16)
+        # )[0:16]
 
         # List all files within patient folder
         all_filenames = glob(current_path)
 
         if not all_filenames:
             warnings.warn(
-                "Problem reading data for patient "
-                + patient
-                + " at "
-                + current_path
+                f"Problem reading data for patient {patient} at "
+                f"{current_path}"
                 + "."
             )
             warnings.warn(
@@ -416,14 +440,14 @@ def anonymize_all_dicoms_within_root_folder(
             )
         else:
             # grab real birth date
-            # TODO handle case where first file does not contain birthdate - look for any file that does?
+            # TODO handle case where first file does not contain birthdate -
+            # look for any file that does?
             first_file = pydicom.read_file(all_filenames[0])
             if "PatientBirthDate" in first_file:
                 real_birthdate = first_file.data_element("PatientBirthDate").value
                 fuzzed_birthdate, birthdate_offset_days = fuzz_date(real_birthdate)
             # print('Replacing real birthdate {} with {}'.format(real_birthdate, fuzzed_birthdate))
             else:
-                fuzzed_birthdate = ""
                 birthdate_offset_days = 0
             all_date_offsets[patient_index] = birthdate_offset_days
 
@@ -443,7 +467,9 @@ def anonymize_all_dicoms_within_root_folder(
 
                 if fuzz_acq_dates:
                     # grab study date from dir name - sub-20170115
-                    study_dir_prefix, original_study_date = study_dir.split(sep="-")
+                    study_dir_prefix, original_study_date = study_dir.split(
+                        sep="-"
+                    )
                     original_study_time = original_study_date[
                         8:
                     ]  # empty string if original_study_date is YYYYMMDD
@@ -455,8 +481,9 @@ def anonymize_all_dicoms_within_root_folder(
                     fuzzed_study_dir = (
                         f"{study_dir_prefix}-{fuzzed_study_date}{original_study_time}"
                     )
-                    # TODO edge case: what if fuzzed date maps to an already existing session? should be OK since
-                    # not yet written to output
+                    # TODO edge case: what if fuzzed date maps to an already
+                    # existing session? should be OK since not yet written to
+                    # output
                 else:
                     fuzzed_study_date = ""
 
@@ -622,13 +649,13 @@ def main():
         if not os.path.isfile(new_ids_path):
             print(f"New ids file ({new_ids_path}) does not exist. Please check!")
             sys.exit(1)
-        
+
         try:
             new_ids = json.load(open(new_ids_path, "r"))
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError:
             print(
                 f"New IDs file ({new_ids_path}) is not a valid JSON file. "
-                "Please check it! \n {e}"
+                "Please check it!"
             )
             sys.exit(1)
 
@@ -643,7 +670,7 @@ def main():
         )
     )
     # Anonymizing all files.
-    mapper = anonymize_all_dicoms_within_root_folder(
+    anonymize_all_dicoms_within_root_folder(
         output_folder=output_folder,
         datapath=data_path,
         new_ids=new_ids,

@@ -143,7 +143,8 @@ def check_ids(uid: str, attribute: str = "Patient ID") -> None:
         attribute: attribute name
 
     Raises:
-        ValueError if it is not valid and print a relevant error message using the argument called attribute
+        ValueError if it is not valid and print a relevant error message
+        using the argument called attribute
 
     """
 
@@ -245,7 +246,8 @@ def check_config_parameters(config_parameters: Dict[str, str]) -> None:
         "type": "object",
         "properties": {
             "server_address": {
-                'anyOf': [ # Can be either an IP address, a hostname, or a URL (http/https or starting with www.)
+                # Can be either an IP address, a hostname, or a URL
+                'anyOf': [
                     {"format": 'ipv4'},
                     {"format": 'ipv6'},
                     {"format": 'hostname'},
