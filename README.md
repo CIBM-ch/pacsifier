@@ -36,11 +36,13 @@ For more details about the DCMTK toolkit and available tools, refer to the [DCMT
 
 ## Building the pacsifier Docker image from the repo
 
-    cd /path/to/PACSIFIER/; docker build --network=host -t pacsifier .
+   cd /path/to/PACSIFIER
+   make build-docker
 
 ## Running the test suite 
 
-    cd /path/to/PACSIFIER/; docker build --network=host -t pacsifier .
+   cd /path/to/PACSIFIER
+   make test
 
 # Installation
 
@@ -192,7 +194,7 @@ To keep things simple, choose a directory (e.g., `my_dir`) that will store the q
 
 To make this directory accessible within the Docker container, you need to bind mount it as a Docker volume to a specific location in the container using the `-v` flag. In the examples below, we bind mount the host computer's directory into the `/base` volume within Docker. Paths for the config file and query files will be relative to that Docker volume.
 
-This Docker image's entrypoint is `pacsifier.py`.
+The Docker image entrypoint runs the provided command in the `pacsifier_minimal` conda environment.
 
 ### Running on Linux or WSL
 
@@ -249,7 +251,7 @@ By default, the wrapper scripts use the `pacsifier:latest` Docker image. You can
 
 2. **CLI Flag** (for one-time use):
    ```bash
-   docker_pacsman --image pacsifier:1.0.0 -c config.json ...
+   docker_pacsman --image pacsifier:1.0.0 -c config.json -q query.csv -d /output --save
    ```
 
 ## Usage Examples
@@ -259,13 +261,13 @@ By default, the wrapper scripts use the `pacsifier:latest` Docker image. You can
 Run the main PACSIFIER command:
 
 ```bash
-docker_pacsman -c config.json -i -q query.csv -d /output
+docker_pacsman -c config.json -i -q query.csv -d /output --save
 ```
 
 Resume an interrupted extraction:
 
 ```bash
-docker_pacsman -c config.json -s --resume -q query.csv -d /output
+docker_pacsman -c config.json -q query.csv -d /output --save --resume
 ```
 
 ### docker_get_pseudonyms
@@ -273,7 +275,7 @@ docker_pacsman -c config.json -s --resume -q query.csv -d /output
 Get pseudonyms for DICOM data:
 
 ```bash
-docker_get_pseudonyms -i input.csv -o output.csv
+docker_get_pseudonyms --mode de-id -c config.json -q query.csv -a ProjectName -d /output
 ```
 
 ### docker_add_karnak_tags
@@ -281,7 +283,7 @@ docker_get_pseudonyms -i input.csv -o output.csv
 Add Karnak tags to DICOM files:
 
 ```bash
-docker_add_karnak_tags -i /path/to/input -o /path/to/output
+docker_add_karnak_tags -d /path/to/input -n /path/to/new_ids.json -a AlbumName
 ```
 
 ### docker_anonymize_dicoms
@@ -289,7 +291,7 @@ docker_add_karnak_tags -i /path/to/input -o /path/to/output
 Anonymize DICOM files:
 
 ```bash
-docker_anonymize_dicoms -i /path/to/input -o /path/to/output
+docker_anonymize_dicoms -d /path/to/input -o /path/to/output -i -p -a
 ```
 
 ### docker_extract_carestream_report
@@ -313,7 +315,7 @@ docker_move_dumps -d /path/to/dicom -o /path/to/info
 Create a DICOMDIR file:
 
 ```bash
-docker_create_dicomdir -o /path/to/output
+docker_create_dicomdir -d /path/to/input -o /path/to/output
 ```
 
 ## How It Works
@@ -329,7 +331,7 @@ The wrapper scripts automatically handle Docker volume mounting. When you provid
 For example, when you run:
 
 ```bash
-docker_pacsman -c /home/user/config.json -q /home/user/query.csv -d /home/user/output
+docker_pacsman -c /home/user/config.json -q /home/user/query.csv -d /home/user/output --save
 ```
 
 The wrapper script:
@@ -337,7 +339,7 @@ The wrapper script:
 1. Mounts `/home/user/config.json` as `/config.json` in the container
 2. Mounts `/home/user/query.csv` as `/query.csv` in the container
 3. Mounts `/home/user/output` as `/output` in the container
-4. Runs `pacsifier -c /config.json -q /query.csv -d /output` inside the container
+4. Runs `pacsifier -c /config.json -q /query.csv -d /output --save` inside the container
 
 ### Network Configuration
 
@@ -366,7 +368,7 @@ If the Docker image is not found, you may need to:
 
 To run PACSIFIER from the command line, use the following format:
 
-   python pacsifier.py --info --save --queryfile /path/to/queryfile --config /path/to/config_file --out_directory /path/to/output_directory
+   pacsifier --info --save --queryfile /path/to/queryfile --config /path/to/config_file --out_directory /path/to/output_directory
 
 ### Options:
 - `--info` or `-i`: Dumps information from the retrieved series (`findscu` output) into CSV files.
@@ -376,6 +378,8 @@ To run PACSIFIER from the command line, use the following format:
 - `--config` or `-c`: Specifies the path to the configuration file (mandatory for query/retrieve operations).
 - `--out_directory` or `-d`: Optional. Specifies the directory where the information dumps and DICOM images will be saved.
 - `--resume`: Resume extraction by skipping already downloaded series. When enabled, PACSIFIER will check if a series directory already contains DICOM files and skip downloading them again.
+- `--upload` or `-u`: Upload DICOM images to the PACS server.
+- `--upload_directory` or `-ud`: Directory containing the DICOM images to upload (used only with `--upload`).
 
 ### Additional Notes:
 - The command will download DICOM images by default to the directory specified with `--out_directory`. If not provided, it defaults to a `data` folder within the project.
@@ -385,22 +389,22 @@ To run PACSIFIER from the command line, use the following format:
 ## Example Commands:
 1. To query and save images:
    ```bash
-   python pacsifier.py --save --info --queryfile /path/to/my_query.csv --config /path/to/my_config.json --out_directory /path/to/my_output_dir
+   pacsifier --save --info --queryfile /path/to/my_query.csv --config /path/to/my_config.json --out_directory /path/to/my_output_dir
    ```
 
 2. To query and move images to a remote DICOM node:
    ```bash
-   python pacsifier.py --move --queryfile /path/to/my_query.csv --config /path/to/my_config.json
+   pacsifier --move --queryfile /path/to/my_query.csv --config /path/to/my_config.json
    ```
 
 3. To upload DICOM images to a PACS server:
    ```bash
-   python pacsifier.py --move --queryfile /path/to/my_query.csv --config /path/to/my_config.json
+   pacsifier --upload --upload_directory /path/to/dicom_dir --config /path/to/my_config.json
    ```
 
 4. To resume an interrupted extraction (skip already downloaded series):
    ```bash
-   python pacsifier.py --save --resume --queryfile /path/to/my_query.csv --config /path/to/my_config.json --out_directory /path/to/my_output_dir
+   pacsifier --save --resume --queryfile /path/to/my_query.csv --config /path/to/my_config.json --out_directory /path/to/my_output_dir
    ```
 
 ## Query file
@@ -408,18 +412,20 @@ To run PACSIFIER from the command line, use the following format:
 The query file is a `.csv` file that should include one or many of these column names : 
 - StudyDate : The study dates of this column should be in the format YYYYMMDD (e.g 19900912 which indicates the 12th of September 1990). <br> Note : Querying on a date range is supported. (e.g 20150201-20160201 will query on studies between 01/02/2015 and 01/02/2016 ) 
 - StudyTime : The study time should be in the format HHMMSS (e.g 140500 which means 14:05:00)
-⁻ SeriesDecription : The series description.
+- SeriesDescription : The series description.
 - PatientID :  The patient ID. 
 - ProtocolName : The protocol names.
 - StudyInstanceUID : The Study Instance UID.
-- PatientName : The patient name. (It is not recommanded to use this filter since there is no clear norm on how the patient names were stored on the pacs server)
-- PatientBirthDate : Similarily to the StudyDate the date should be in format YYYYMMDD. Querying on date range is not supported for patient birth date.
+- PatientName : The patient name. (It is not recommended to use this filter since there is no clear norm on how the patient names were stored on the PACS server)
+- PatientBirthDate : Similarly to the StudyDate the date should be in format YYYYMMDD. Querying on date range is not supported for patient birth date.
 - SeriesInstanceUID : The Series Instance UID
-- ImageType : The image type as stored in the pacs server. (Note : using this filter significantly slows down the querying process. Use it only if absolutely necessary.) 
+- ImageType : The image type as stored in the PACS server. (Note : using this filter significantly slows down the querying process. Use it only if absolutely necessary.) 
 - AcquisitionDate : The acquisition date.
+- DeviceSerialNumber : The device serial number.
 - SeriesNumber : The series number.
 - StudyDescription : The study description.
 - AccessionNumber : The Accession number.
+- SequenceName : The sequence name.
 - Modality : The modality.
 
 The query file can be built in Excel and exported to comma-separated values `.csv` format.
@@ -496,7 +502,7 @@ This csv file will retrieve all the images with ProtocolName starting with BEAT_
 For patients that have a study declared in the Horus system, you can get consistent pseudonyms using the De-ID API.
 
 ### Command Line
-   python get_pseudonyms.py --config my_config_deid.json --queryfile my_query.csv --project_name my_project_name --out_directory ./
+   pacsifier-get-pseudonyms --mode de-id --config my_config_deid.json --queryfile my_query.csv --project_name my_project_name --out_directory ./
 
 - `my_config_deid.json` is the configuration file for the De-ID API, containing the token and service URL.
 - `my_query.csv` is the PACSIFIER query file, listing all PatientIDs to pseudonymize.
@@ -506,12 +512,12 @@ After running, the output directory will contain two files: `new_ids_[my_project
 
 ### Docker Command-Line
 
-   docker run -it --rm -v c:\Users\my_user\my_dir:/base --entrypoint "conda" pacsifier:1.0.0 run -n pacsifier_minimal python get_pseudonyms.py ...
+   docker_get_pseudonyms --mode de-id -c my_config_deid.json -q my_query.csv -a my_project_name -d ./
 
 ## Anonymizing Directly with PACSIFIER
 
 ### Command Line
-   python anonymize_Dicoms.py --in_folder files-directory --out_folder anonymized-files-directory --new_ids my_new_ids.json --delete_identifiable --fuzz_acq_dates --remove_private_tags --keep_patient_dir_names
+   pacsifier-anonymize --in_folder files-directory --out_folder anonymized-files-directory --new_ids my_new_ids.json --delete_identifiable --fuzz_acq_dates --remove_private_tags --keep_patient_dir_names
 
 - `files-directory`: Path to the folder containing the DICOM images.
 - `anonymized-files-directory`: Path where the anonymized DICOM images will be saved.
@@ -523,7 +529,7 @@ After running, the output directory will contain two files: `new_ids_[my_project
 
 ### Docker Command-Line
    ```bash
-  docker run -it --rm -v /home/my_user/my_dir:/base --entrypoint "conda" pacsifier:1.0.0 run -n pacsifier_minimal python anonymize_Dicoms.py --in_folder /base/files-directory --out_folder /base/anonymized-files-directory --new_ids /base/my_new_ids.json --delete_identifiable --fuzz_acq_dates
+   docker_anonymize_dicoms --in_folder /home/my_user/my_dir/files-directory --out_folder /home/my_user/my_dir/anonymized-files-directory --new_ids /home/my_user/my_dir/my_new_ids.json --delete_identifiable --fuzz_acq_dates
    ```
 
 Replace `...` with the same arguments as above.
@@ -542,30 +548,33 @@ Replace `...` with the same arguments as above.
 
 #### Example 1
    ```bash
-   python anonymize_Dicoms.py --in_folder ~/data --out_folder ~/anonymized_data --fuzz_acq_dates --remove_private_tags
+   pacsifier-anonymize --in_folder ~/data --out_folder ~/anonymized_data --fuzz_acq_dates --remove_private_tags
    ```
 
 This command anonymizes DICOM files from the `data` folder and saves them into `anonymized_data`, applying date fuzzing and removing private tags.
 
 #### Example 2
    ```bash
-   python anonymize_Dicoms.py --in_folder ~/data --out_folder ~/data --delete_identifiable
+   pacsifier-anonymize --in_folder ~/data --out_folder ~/data --delete_identifiable
    ```
 
 This will replace the images within the `data` folder with anonymized versions, removing identifiable images.
 
 #### Example 3
    ```bash
-   python anonymize_Dicoms.py --in_folder ~/data --out_folder ~/anonymized_data --keep_patient_dir_names --new_ids my_new_ids.json
+   pacsifier-anonymize --in_folder ~/data --out_folder ~/anonymized_data --keep_patient_dir_names --new_ids my_new_ids.json
    ```
 
 Running this command will anonymize the DICOM files, retain original patient directory names, and use the new IDs provided in `my_new_ids.json`.
 
 ## Anonymizing via the Karnak Gateway
 
+### Command Line
+   pacsifier-add-karnak-tags --in_folder /path/to/data --new_ids /path/to/my_new_ids.json --day_shift /path/to/day_shift.json --album_name my_album_name
+
 ### Docker Command-Line
    ```bash
-   docker run -it --rm -v /home/my_user/my_dir:/base --entrypoint "conda" pacsifier:1.0.0 run -n pacsifier_minimal python add_Karnak_tags.py --new_ids /base/my_new_ids.json --day_shift /base/day_shift.json --album_name my_album_name
+   docker_add_karnak_tags --in_folder /home/my_user/my_dir --new_ids /home/my_user/my_dir/my_new_ids.json --day_shift /home/my_user/my_dir/day_shift.json --album_name my_album_name
    ```
 
 - `my_new_ids.json`: Maps real patient IDs to anonymized codes, using the same format as direct anonymization.
@@ -585,21 +594,21 @@ Running this command will anonymize the DICOM files, retain original patient dir
 
 #### Example 1 
    ```bash
-	python anonymize_Dicoms.py --in_folder ~/data --out_folder ~/anonymized_data
+   pacsifier-anonymize --in_folder ~/data --out_folder ~/anonymized_data
    ```
 
  Running this command will anonymize the dicom files within the data folder and save them into anonymized_data folder.
 
 #### Example 2
    ```bash
-	python anonymize_Dicoms.py --in_folder ~/data --out_folder ~/data
+   pacsifier-anonymize --in_folder ~/data --out_folder ~/data
    ```
 
 Runnning the command above will replace all the images within data folder with anonymized ones.
 
 #### Example 3
    ```bash 
-	python anonymize_Dicoms.py --in_folder ~/data --out_folder ~/anonymized_data --delete_identifiable
+   pacsifier-anonymize --in_folder ~/data --out_folder ~/anonymized_data --delete_identifiable
    ```
 
  Running this command will anonymize the dicom files within the data folder and save them into anonymized_data folder, and delete any identifiable images.
@@ -607,7 +616,7 @@ Runnning the command above will replace all the images within data folder with a
 ## Anonymizing via the Karnak gateway
 
 ```bash
-docker run -it --rm -v /home/my_user/my_dir:/base --entrypoint "conda" pacsifier:1.0.0 run -n pacsifier_minimal python add_Karnak_tags.py --new_ids /base/my_new_ids.json --day_shift /base/day_shift.json --album_name my_album_name
+docker_add_karnak_tags --in_folder /home/my_user/my_dir --new_ids /home/my_user/my_dir/my_new_ids.json --day_shift /home/my_user/my_dir/day_shift.json --album_name my_album_name
   ```
 
  - `my_new_ids.json` maps on-disk real patient IDs to a chosen anonymisation code, same syntax as for direct PACSIFIER anonymisation. Example contents: `{'sub-1234':'P0001', 'sub-87262':'P0002'}`
@@ -620,7 +629,7 @@ If pacsifier is called with the option --info or -i it will store csv files cont
 
 ## Command line
 ```bash
-python move_dumps.py --data_folder ~/path-to-folder-containing-dicom-files --info_folder ~/path-to-new-folder
+pacsifier-move-csv --data_folder ~/path-to-folder-containing-dicom-files --info_folder ~/path-to-new-folder
 ```
 
 - data_folder takes the path to the dicom folder. 
@@ -637,7 +646,7 @@ The create_DICOMDIR script creates a copy of the dicom directory passed as param
 
 ## Command line
 ```bash
-python create_DICOMDIR.py --in_folder ~/path-to-dicom-folder --out_folder ~/out-path
+pacsifier-create-dicomdir --in_folder ~/path-to-dicom-folder --out_folder ~/out-path
 ```
 
 - in_folder takes the path to the dicom folder.

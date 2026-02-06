@@ -9,10 +9,10 @@ Commandline Usage
 It consists of the following commands:
 
 * ``pacsifier``: The main command, which can be used to interact with a PACS server and manipulate DICOM files.
-* ``pacsifier-anonymize-dicoms``: Anonymize DICOM files.
+* ``pacsifier-anonymize``: Anonymize DICOM files.
 * ``pacsifier-create-dicomdir``: Create a DICOMDIR file.
 * ``pacsifier-get-pseudonyms``: Get pseudonyms for a list of DICOM files.
-* ``pacsifier-move-dumps``: Move DICOM files from a PACS server to a local directory.
+* ``pacsifier-move-csv``: Move DICOM files from a PACS server to a local directory.
 * ``pacsifier-add-karnak-tags``: Add Karnak tags to DICOM files.
 * ``pacsifier-extract-carestream-report``: Extract Carestream reports from DICOM files.
 
@@ -28,12 +28,12 @@ Running ``PACSIFIER`` commands in a shell
 		:ref: pacsifier.cli.pacsifier.get_parser
 		:prog: pacsifier
 
-``pacsifier-anonymize-dicoms`` command
+``pacsifier-anonymize`` command
 --------------------------------------
 
 .. argparse::
 		:ref: pacsifier.cli.anonymize_dicoms.get_parser
-		:prog: pacsifier-anonymize_dicoms
+		:prog: pacsifier-anonymize
 
 ``pacsifier-create-dicomdir`` command
 -------------------------------------
@@ -49,12 +49,12 @@ Running ``PACSIFIER`` commands in a shell
 		:ref: pacsifier.cli.get_pseudonyms.get_parser
 		:prog: pacsifier-get-pseudonyms
 
-``pacsifier-move-dumps`` command
+``pacsifier-move-csv`` command
 -------------------------------------
 
 .. argparse::
 		:ref: pacsifier.cli.move_dumps.get_parser
-		:prog: pacsifier-move-dumps
+		:prog: pacsifier-move-csv
 
 ``pacsifier-add-karnak-tags`` command
 -------------------------------------
@@ -63,17 +63,34 @@ Running ``PACSIFIER`` commands in a shell
 		:ref: pacsifier.cli.add_karnak_tags.get_parser
 		:prog: pacsifier-add-karnak-tags
 
+``pacsifier-extract-carestream-report`` command
+----------------------------------------------
+
+.. argparse::
+		:ref: pacsifier.cli.extract_carestream_report.get_parser
+		:prog: pacsifier-extract-carestream-report
+
 
 .. _cmdusage-docker:
 
 Running ``PACSIFIER`` commands in Docker
 ========================================
 
-In this section, we provide examples to run each of the ``PACSIFIER`` commands in the Docker container.
+The Docker image entrypoint runs the provided command in the ``pacsifier_minimal`` conda environment. You can use the Docker wrapper scripts (recommended) or call the CLI commands directly.
 
-``pacsifier`` command
----------------------
+Recommended (wrapper scripts)
+-----------------------------
 
 .. code-block:: bash
 
-        docker run -it --rm -v /home/my_user/my_dir:/base --entrypoint "conda" pacsifier:1.0.0 run -n pacsifier_minimal python anonymize_Dicoms.py --in_folder /base/files-directory --out_folder /base/anonymized-files-directory --new_ids /base/my_new_ids.json --delete_identifiable --fuzz_acq_dates
+		docker_pacsman -c config.json -q query.csv -d /output --save
+
+See :ref:`docker_wrappers` for the full list of wrapper scripts and examples.
+
+Direct Docker invocation
+------------------------
+
+.. code-block:: bash
+
+		docker run --rm --net=host -v /path/to/my_dir:/base pacsifier:1.0.0 \
+			pacsifier --save --info --queryfile /base/my_query.csv --config /base/my_config.json --out_directory /base/my_output_dir

@@ -40,7 +40,7 @@ By default, the wrapper scripts use the ``pacsifier:latest`` Docker image. You c
 
 .. code-block:: bash
 
-   docker_pacsman --image pacsifier:1.0.0 -c config.json -i -q query.csv -d /output
+   docker_pacsman --image pacsifier:1.0.0 -c config.json -i -q query.csv -d /output --save
 
 Usage Examples
 ==============
@@ -52,7 +52,7 @@ Run the main PACSIFIER command:
 
 .. code-block:: bash
 
-   docker_pacsman -c config.json -i -q query.csv -d /output
+   docker_pacsman -c config.json -i -q query.csv -d /output --save
 
 docker_get_pseudonyms
 ---------------------
@@ -61,7 +61,7 @@ Get pseudonyms for DICOM data:
 
 .. code-block:: bash
 
-   docker_get_pseudonyms -i input.csv -o output.csv
+   docker_get_pseudonyms --mode de-id -c config.json -q query.csv -a ProjectName -d /output
 
 docker_add_karnak_tags
 ----------------------
@@ -70,7 +70,7 @@ Add Karnak tags to DICOM files:
 
 .. code-block:: bash
 
-   docker_add_karnak_tags -i /path/to/input -o /path/to/output
+   docker_add_karnak_tags -d /path/to/input -n /path/to/new_ids.json -a AlbumName
 
 docker_anonymize_dicoms
 -----------------------
@@ -79,7 +79,7 @@ Anonymize DICOM files:
 
 .. code-block:: bash
 
-   docker_anonymize_dicoms -i /path/to/input -o /path/to/output
+   docker_anonymize_dicoms -d /path/to/input -o /path/to/output -i -p -a
 
 docker_extract_carestream_report
 --------------------------------
@@ -106,7 +106,7 @@ Create a DICOMDIR file:
 
 .. code-block:: bash
 
-   docker_create_dicomdir -o /path/to/output
+   docker_create_dicomdir -d /path/to/input -o /path/to/output
 
 How It Works
 ============
@@ -124,14 +124,14 @@ For example, when you run:
 
 .. code-block:: bash
 
-   docker_pacsman -c /home/user/config.json -q /home/user/query.csv -d /home/user/output
+   docker_pacsman -c /home/user/config.json -q /home/user/query.csv -d /home/user/output --save
 
 The wrapper script:
 
 1. Mounts ``/home/user/config.json`` as ``/config.json`` in the container
 2. Mounts ``/home/user/query.csv`` as ``/query.csv`` in the container
 3. Mounts ``/home/user/output`` as ``/output`` in the container
-4. Runs ``pacsifier -c /config.json -q /query.csv -d /output`` inside the container
+4. Runs ``pacsifier -c /config.json -q /query.csv -d /output --save`` inside the container
 
 Network Configuration
 ---------------------
