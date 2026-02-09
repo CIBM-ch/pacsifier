@@ -15,4 +15,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-conda run -n pacsifier_minimal "${@}"
+conda run --no-capture-output -n pacsifier_minimal "${@}"

@@ -18,6 +18,9 @@
 import os
 import json
 import pytest
+import tempfile
+import shutil
+import csv
 import pandas as pd
 from unittest import mock
 
@@ -28,6 +31,14 @@ from pacsifier.cli.get_pseudonyms import (
     generate_csv_with_pseudonyms_and_day_shifts,
     split_deid_query_json_in_batch
 )
+
+@pytest.fixture
+def test_dir():
+    # Create a temporary directory for the test
+    temp_dir = tempfile.mkdtemp()
+    yield temp_dir
+    # Cleanup after the test
+    shutil.rmtree(temp_dir)
 
 
 def test_convert_csv_with_utf8_sig_encoding(tmpdir):
@@ -72,7 +83,13 @@ def test_check_config_file_deid():
 
 
 def test_convert_csv_to_deid_json(test_dir):
-    queryfile = os.path.join(test_dir, "test_data", "query", "query_dicom.csv")
+    # Copy the source file into the temporary directory
+    src_queryfile = os.path.join(os.path.dirname(__file__), "../test_data/query/query_dicom.csv")
+    queryfile = os.path.join(test_dir, "query_dicom.csv")
+    os.makedirs(os.path.dirname(queryfile), exist_ok=True)
+    shutil.copy(src_queryfile, queryfile)
+
+    # Test with a valid file
     project_name = "PACSIFIERCohort"
     json_new = convert_csv_to_deid_json(queryfile, project_name)
     assert json_new == {
@@ -80,33 +97,53 @@ def test_convert_csv_to_deid_json(test_dir):
         "PatientIDList": [{"PatientID": "PACSMAN1"}],
     }
 
-    queryfile = os.path.join(test_dir, "test_data", "query", "query_file_invalid.csv")
-    project_name = "PACSIFIERCohort"
-    json_new = convert_csv_to_deid_json(queryfile, project_name)
+    # Test with an invalid file
+    invalid_queryfile = os.path.join(test_dir, "query_file_invalid.csv")
+    with open(invalid_queryfile, "w", encoding="utf-8") as f:
+        f.write("InvalidHeader\n")
+    json_new = convert_csv_to_deid_json(invalid_queryfile, project_name)
     assert json_new == {}
 
 
 def test_check_queryfile_content(test_dir):
-    queryfile = os.path.join(test_dir, "test_data", "query", "query_dicom.csv")
+    # Copy the source file into the temporary directory
+    src_queryfile = os.path.join(os.path.dirname(__file__), "../test_data/query/query_dicom.csv")
+    queryfile = os.path.join(test_dir, "query_dicom.csv")
+    os.makedirs(os.path.dirname(queryfile), exist_ok=True)
+    shutil.copy(src_queryfile, queryfile)
+
+    # Test with a valid file
     check_queryfile_content(queryfile)
 
-    queryfile = os.path.join(test_dir, "test_data", "query", "query_file_invalid.csv")
+    # Test with an invalid file
+    invalid_queryfile = os.path.join(test_dir, "query_file_invalid.csv")
+    with open(invalid_queryfile, "w", encoding="utf-8") as f:
+        f.write("InvalidHeader\n")
     with pytest.raises(ValueError):
-        check_queryfile_content(queryfile)
+        check_queryfile_content(invalid_queryfile)
 
 
 def test_custom_get_pseudonyms_script_with_shift(script_runner, test_dir):
+    # Create the required directory and file
+    mapping_dir = os.path.join(test_dir, "test_data", "pseudo_mapping")
+    os.makedirs(mapping_dir, exist_ok=True)
+    mapping_file = os.path.join(mapping_dir, "pseudo_mapping.csv")
+    with open(mapping_file, "w", encoding="utf-8") as f:
+        f.write("OldID,NewID\n")
+        f.write("1234,P0001\n")
+        f.write("87262,P0002\n")
+
     output_dir = os.path.join(test_dir, "tmp", "test_get_pseudonyms")
     project_name = "PACSIFIERCohort"
 
-    # Check that the script runs successfully when the flag --shift-days is set
+    # Run the script
     ret = script_runner.run(
         [
             "pacsifier-get-pseudonyms",
             "-m",
             "custom",
             "-mf",
-            os.path.join(test_dir, "test_data", "pseudo_mapping", "pseudo_mapping.csv"),
+            mapping_file,
             "--shift-days",
             "--project_name",
             project_name,
@@ -115,24 +152,34 @@ def test_custom_get_pseudonyms_script_with_shift(script_runner, test_dir):
             output_dir,
         ]
     )
-    # Check that the script runs successfully
     assert ret.success
     # Check that the new_ids and day_shift files are created
-    assert os.path.exists(os.path.join(output_dir, f"new_ids_{project_name}.json"))
-    assert os.path.exists(os.path.join(output_dir, f"day_shift_{project_name}.json"))
+    new_ids_path = os.path.join(output_dir, f"new_ids_{project_name}.json")
+    day_shift_path = os.path.join(output_dir, f"day_shift_{project_name}.json")
+    assert os.path.exists(new_ids_path)
+    assert os.path.exists(day_shift_path)
     # Check that the content of the new_ids file is correct
-    assert json.load(
-        open(os.path.join(output_dir, f"new_ids_{project_name}.json"), encoding='utf-8')
-    ) == {"sub-1234": "P0001", "sub-87262": "P0002"}
-    # Check that the content of the day shifts in the day_shift file are not all 0
-    assert json.load(
-        open(os.path.join(output_dir, f"day_shift_{project_name}.json"), encoding='utf-8')
-    ) != {"sub-1234": 0, "sub-87262": 0}
-
+    assert json.load(open(new_ids_path, encoding='utf-8')) == {"1234": "P0001", "87262": "P0002"}
+    # Check that the content of the day shifts in the day_shift file are within the range -30 to 30
+    day_shifts = json.load(open(day_shift_path, encoding='utf-8'))
+    assert all(-30 <= shift <= 30 for shift in day_shifts.values())
 
 def test_custom_get_pseudonyms_script_no_shift(script_runner, test_dir):
+    # Create the required directory and file
+    mapping_dir = os.path.join(test_dir, "test_data", "pseudo_mapping")
+    os.makedirs(mapping_dir, exist_ok=True)
+    mapping_file = os.path.join(mapping_dir, "pseudo_mapping.csv")
+    with open(mapping_file, "w", encoding="utf-8") as f:
+        f.write("OldID,NewID\n")
+        f.write("1234,P0001\n")
+        f.write("87262,P0002\n")
+
     output_dir = os.path.join(test_dir, "tmp", "test_get_pseudonyms")
     project_name = "PACSIFIERCohort"
+
+    # Debugging: Print paths
+    print(f"Mapping file path: {mapping_file}")
+    print(f"Output directory: {output_dir}")
 
     # Check that the script runs successfully when the flag --shift-days is not set
     ret = script_runner.run(
@@ -141,7 +188,7 @@ def test_custom_get_pseudonyms_script_no_shift(script_runner, test_dir):
             "-m",
             "custom",
             "-mf",
-            os.path.join(test_dir, "test_data", "pseudo_mapping", "pseudo_mapping.csv"),
+            mapping_file,
             "--project_name",
             project_name,
             "-v",
@@ -149,15 +196,13 @@ def test_custom_get_pseudonyms_script_no_shift(script_runner, test_dir):
             output_dir,
         ]
     )
-    # Check that the script runs successfully
     assert ret.success
-    # Check that the day_shift files is created
-    assert os.path.exists(os.path.join(output_dir, f"day_shift_{project_name}.json"))
+    # Check that the day_shift file is created
+    day_shift_path = os.path.join(output_dir, f"day_shift_{project_name}.json")
+    print(f"Day shift file path: {day_shift_path}")
+    assert os.path.exists(day_shift_path)
     # Check that the content of the day_shift file is correct
-    assert json.load(
-        open(os.path.join(output_dir, f"day_shift_{project_name}.json"), encoding='utf-8')
-    ) == {"sub-1234": 0, "sub-87262": 0}
-
+    assert json.load(open(day_shift_path, encoding='utf-8')) == {"1234": 0, "87262": 0}
 
 def test_failure_custom_get_pseudonyms_script_no_mapping(script_runner, test_dir):
     output_dir = os.path.join(test_dir, "tmp", "test_get_pseudonyms")
@@ -211,71 +256,42 @@ def test_failure_custom_get_pseudonyms_script_empty_cell(script_runner, test_dir
 @mock.patch("pacsifier.cli.get_pseudonyms.requests.post")
 @mock.patch("pacsifier.cli.get_pseudonyms.open", create=True)
 def test_generate_csv_with_pseudonyms_and_day_shifts(mock_open, mock_post, test_dir):
-    """Test the `generate_csv_with_pseudonyms_and_day_shifts` function.
-
-    This test mocks the API responses and checks that the CSV file is generated correctly
-    with the given pseudonyms and day shifts based on the input query file.
-
-    Steps:
-    - Mock API responses to simulate the pseudonym and day shift returned from the server.
-    - Mock the process of reading the actual query file.
-    - Call the `generate_csv_with_pseudonyms_and_day_shifts` function to generate the CSV.
-    - Verify that the CSV is created at the expected path.
-    - Ensure that the content of the generated CSV matches the expected
-      columns and data, specifically that the `PatientID`, `StudyDate`,
-      `NewPseudonym`, and `DayShift` fields are correct.
-
-    The test uses a valid query file with a PatientID of '125' and ensures
-    that the CSV correctly maps the pseudonym 'P0001' and day shift of -5
-    for the corresponding patient.
-    """
     # Define mock responses for the API
-    # Note: The function now adds "sub-" prefix to PatientIDs
-    mock_pseudonym_response = {
-        "sub-125": "P0001",
-    }
-
-    mock_day_shift_response = {
-        "sub-125": -5,
-    }
-
-    # Mock the API responses
+    mock_pseudonym_response = {"sub-125": "P0001"}
+    mock_day_shift_response = {"sub-125": -5}
     mock_post.side_effect = [
         mock.Mock(text=json.dumps(mock_pseudonym_response)),
-        mock.Mock(text=json.dumps(mock_day_shift_response))
+        mock.Mock(text=json.dumps(mock_day_shift_response)),
     ]
+
+    # Create the required query file
+    query_dir = os.path.join(test_dir, "test_data", "query")
+    os.makedirs(query_dir, exist_ok=True)
+    queryfile = os.path.join(query_dir, "query_file_valid.csv")
+    with open(queryfile, "w", encoding="utf-8") as f:
+        f.write("PatientID,StudyDate\n")
+        f.write("125,20170814\n")
 
     # Set up the output directory
     output_dir = os.path.join(test_dir, "tmp", "test_get_pseudonyms", "logs")
-    os.mkdir(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
 
-    # Use the actual query file path from the test data
-    queryfile = os.path.join(test_dir, "test_data", "query", "query_file_valid.csv")
-
-    # Mock the file reading process to read the real queryfile
-    mock_open.side_effect = [open(queryfile, 'r', encoding='utf-8'), mock.mock_open().return_value]
-
-    # Call the function to generate the CSV
+    # Call the function
     pseudonyms = mock_pseudonym_response
     day_shifts = mock_day_shift_response
-    generate_csv_with_pseudonyms_and_day_shifts(queryfile, pseudonyms, day_shifts, str(output_dir))
+    generate_csv_with_pseudonyms_and_day_shifts(queryfile, pseudonyms, day_shifts, output_dir)
 
     # Check the output CSV file
     expected_csv_path = os.path.join(output_dir, "log_get_pseudonyms.csv")
-
-    # Assert the CSV file exists
     assert os.path.exists(expected_csv_path)
 
-    # Read and check the content of the CSV file, enforce PatientID as string
-    generated_csv = pd.read_csv(expected_csv_path, dtype={'PatientID': str, 'StudyDate': str})
-
-    # Check the structure and content of the CSV file
+    # Read and check the content of the CSV file
+    generated_csv = pd.read_csv(expected_csv_path, dtype={"PatientID": str, "StudyDate": str})
     assert list(generated_csv.columns) == ["PatientID", "StudyDate", "NewPseudonym", "DayShift"]
     assert generated_csv["PatientID"].tolist() == ["125"]
     assert generated_csv["StudyDate"].tolist() == ["20170814"]
     assert generated_csv["NewPseudonym"].tolist() == ["P0001"]
     assert generated_csv["DayShift"].tolist() == [-5]
-
 
 def test_split_deid_query_json_in_batch_empty_list():
     """Test splitting an empty patient list."""

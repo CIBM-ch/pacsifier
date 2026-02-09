@@ -47,7 +47,7 @@ import csv
 import requests
 from typing import Dict, Any, List
 import numpy as np
-from pandas import read_csv
+import pandas as pd
 from pacsifier.cli.pacsifier import check_query_table_allowed_filters
 
 
@@ -80,23 +80,29 @@ def convert_csv_to_deid_json(queryfile: str, project_name: str) -> Dict[str, Any
     """
     json_new_str = '{"project": "' + project_name + '", "PatientIDList": ['
     patient_list_str = ""
+    try:
+        with open(queryfile, newline="", encoding='UTF-8-sig') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                if row["PatientID"] != "":
+                    patient_list_str = (
+                        patient_list_str + '{"PatientID": "' + row["PatientID"] + '"}, '
+                    )
 
-    with open(queryfile, newline="", encoding='UTF-8-sig') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            if row["PatientID"] != "":
-                patient_list_str = (
-                    patient_list_str + '{"PatientID": "' + row["PatientID"] + '"}, '
-                )
+        if len(patient_list_str) > 0:
+            if patient_list_str.endswith(", "):
+                patient_list_str = patient_list_str[:-2]
+            json_new_str = json_new_str + patient_list_str + "]}"
+        else:
+            json_new_str = "{}"
 
-    if len(patient_list_str) > 0:
-        if patient_list_str.endswith(", "):
-            patient_list_str = patient_list_str[:-2]
-        json_new_str = json_new_str + patient_list_str + "]}"
-    else:
-        json_new_str = "{}"
-
-    return json.loads(json_new_str)
+        return json.loads(json_new_str)
+    except FileNotFoundError:
+        print(f"Error: Query file '{queryfile}' not found.")
+        return {}
+    except KeyError:
+        print("Error: Missing required columns in the query file.")
+        return {}
 
 
 def get_deid_pseudonyms(deid_parameters: Dict[str, str], query_json: Dict[str, Any]) -> str:
@@ -173,10 +179,13 @@ def check_queryfile_content(queryfile: str) -> None:
 
     """
     try:
-        query_table = read_csv(queryfile, dtype=str).fillna("")
-    except Exception as e:
-        print(f"Error reading PACSIFIER query file: {e}")
-        sys.exit(1)
+        query_table = pd.read_csv(queryfile, dtype=str).fillna("")
+        if "PatientID" not in query_table.columns or "StudyDate" not in query_table.columns:
+            raise ValueError("Query file must contain 'PatientID' and 'StudyDate' columns.")
+    except FileNotFoundError:
+        raise ValueError(f"Query file '{queryfile}' not found.")
+    except pd.errors.EmptyDataError:
+        raise ValueError("Query file is empty.")
 
     check_query_table_allowed_filters(query_table)
 
@@ -192,23 +201,28 @@ def generate_csv_with_pseudonyms_and_day_shifts(
         day_shifts: dictionary mapping old Patient IDs to day shifts
         output_dir: path to save the resulting CSV file
     """
-    # Load the original query file
-    query_table = read_csv(queryfile, dtype=str).fillna("")
+    try:
+        os.makedirs(output_dir, exist_ok=True)
 
-    # Add two new columns for pseudonyms and day shifts
-    # Adding "sub-" as prefix for all patients to have a match!
-    tmp = {}
-    tmp["PatientID"] = query_table["PatientID"].apply(lambda x: f"sub-{x}")
-    query_table["NewPseudonym"] = tmp["PatientID"].map(pseudonyms)
-    query_table["DayShift"] = tmp["PatientID"].map(day_shifts)
+        # Define the output CSV path
+        output_csv = os.path.join(output_dir, "log_get_pseudonyms.csv")
 
-    # Define the output CSV path
-    output_csv = os.path.join(output_dir, "log_get_pseudonyms.csv")
+        # Load the original query file
+        query_table = pd.read_csv(queryfile, dtype=str).fillna("")
 
-    # Save the updated table with new pseudonyms and day shifts to a CSV file
-    query_table.to_csv(output_csv, index=False)
+        # Add two new columns for pseudonyms and day shifts
+        # Adding "sub-" as prefix for all patients to have a match!
+        tmp = {}
+        tmp["PatientID"] = query_table["PatientID"].apply(lambda x: f"sub-{x}")
+        query_table["NewPseudonym"] = tmp["PatientID"].map(pseudonyms)
+        query_table["DayShift"] = tmp["PatientID"].map(day_shifts)
 
-    print(f"CSV with new pseudonyms and day shifts saved to: {output_csv}")
+        # Save the updated table with new pseudonyms and day shifts to a CSV file
+        query_table.to_csv(output_csv, index=False)
+
+        print(f"CSV with new pseudonyms and day shifts saved to: {output_csv}")
+    except FileNotFoundError:
+        print(f"Error: Query file '{queryfile}' not found.")
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -286,7 +300,11 @@ def split_deid_query_json_in_batch(
 
         Returns:
             List of dictionaries, each containing a batch of patients with the project information
-        """
+    """
+
+    if batch_size <= 0:
+        batch_size = len(deid_query_json["PatientIDList"]) or 1
+
     patient_id_list = deid_query_json["PatientIDList"]
     batches = []
 
@@ -405,12 +423,14 @@ def main():
 
     else:
         # Read the custom mapping file.
-        mappingfile_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.mappingfile)))
+        mappingfile_path = os.path.abspath(args.mappingfile)
         if not os.path.isfile(mappingfile_path):
             print(f"Custom mapping file {mappingfile_path} does not exist!")
             sys.exit(1)
 
-        mapping_table = read_csv(mappingfile_path, dtype=str, header=None)
+        # Read the custom mapping file (expects a header row: OldID,NewID)
+        mapping_table = pd.read_csv(mappingfile_path, dtype=str, header=0)
+
         if mapping_table.isnull().values.any():
             print("The custom mapping file contains empty cells!")
             sys.exit(1)

@@ -1,0 +1,40 @@
+#!/bin/bash
+
+CONFIG_PATH=""
+QUERY_PATH=""
+OUTPUT_PATH=""
+EXTRA_ARGS=()
+
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    -c|--config)
+      CONFIG_PATH="$2"
+      shift 2
+      ;;
+    -q|--queryfile)
+      QUERY_PATH="$2"
+      shift 2
+      ;;
+    -d|--out_directory)
+      OUTPUT_PATH="$2"
+      shift 2
+      ;;
+    *)
+      EXTRA_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$CONFIG_PATH" || -z "$QUERY_PATH" || -z "$OUTPUT_PATH" ]]; then
+  echo "Error: Missing required arguments. Ensure you provide -c (config), -q (queryfile), and -d (output directory)."
+  exit 1
+fi
+
+echo "Running: sudo docker run --rm --net=host -v $CONFIG_PATH:/config.json -v $QUERY_PATH:/query.csv -v $OUTPUT_PATH:/output pacsifier:1.0.0.dev0 pacsifier-get-pseudonyms ${EXTRA_ARGS[*]}"
+
+sudo docker run --rm --net=host \
+  -v "$CONFIG_PATH:/config.json" \
+  -v "$QUERY_PATH:/query.csv" \
+  -v "$OUTPUT_PATH:/output" \
+  pacsifier:1.0.0.dev0 pacsifier-get-pseudonyms "${EXTRA_ARGS[@]}"

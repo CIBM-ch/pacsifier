@@ -232,6 +232,7 @@ def retrieve_dicoms_using_table(
     info: bool,
     move: bool,
     resume: bool = False,
+    verbose: bool = False,
 ) -> None:
     """Query and retrieve dicom images or / and  their info dumps using the input query table.
 
@@ -280,7 +281,23 @@ def retrieve_dicoms_using_table(
 
     validator = Validator(schema)
     counter = 0
-    log_entries = []
+
+    log_dir = os.path.join(output_dir, "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file_path = os.path.join(log_dir, "pacsifier_log.csv")
+    completed_series_uids = set()
+    if resume and os.path.isfile(log_file_path):
+        try:
+            log_table = read_csv(log_file_path)
+            if "SeriesInstanceUID" in log_table.columns and "Completed" in log_table.columns:
+                completed_mask = (
+                    log_table["Completed"].astype(str).str.lower() == "true"
+                )
+                completed_series_uids = set(
+                    log_table.loc[completed_mask, "SeriesInstanceUID"].astype(str)
+                )
+        except (ParserError, UnicodeDecodeError):
+            completed_series_uids = set()
 
     for i, query_attributes in enumerate(attributes_list):
         # print("Retrieving images for element number ", i+1)
@@ -295,13 +312,20 @@ def retrieve_dicoms_using_table(
             print(
                 "Retrieving images for element number {0}: sub-{1}_ses-{2}".format(
                     i + 1, query_attributes["PatientID"], query_attributes["StudyDate"]
-                )
+                ),
+                flush=True,
             )
         else:
             print(
                 "Retrieving images for element number {0}: sub-{1}".format(
                     i + 1, query_attributes["PatientID"]
-                )
+                ),
+                flush=True,
+            )
+        if verbose:
+            print(
+                "Starting query for element number {0}...".format(i + 1),
+                flush=True,
             )
 
         inputs = {k: query_attributes[k] for k in schema.keys()}
@@ -370,6 +394,11 @@ def retrieve_dicoms_using_table(
 
         # Extract all series StudyInstanceUIDs etc.
         series = parse_findscu_dump_file(current_findscu_dump_file)
+        if verbose:
+            print(
+                f"Found {len(series)} series for element {i + 1}.",
+                flush=True,
+            )
 
         # Pre-compile sanitizing regex for folder renaming
         my_re_clean = re.compile("[^0-9a-zA-Z]+")  # keep only alphanums
@@ -455,22 +484,23 @@ def retrieve_dicoms_using_table(
 
             # Check if series already exists and resume is enabled
             series_already_exists = False
-            if resume and save and os.path.isdir(patient_serie_output_dir):
-                # Check if directory contains DICOM files
-                dicom_files = [
-                    f for f in os.listdir(patient_serie_output_dir)
-                    if os.path.isfile(os.path.join(patient_serie_output_dir, f))
-                    and f.lower().endswith(('.dcm', '.dicom'))
-                ]
-                if dicom_files:
-                    series_already_exists = True
-                    print(f"Skipping already downloaded series: "
-                          f"{patient_serie_output_dir} ({len(dicom_files)} files)")
+            series_uid = str(serie.get("SeriesInstanceUID", "")).strip()
+            if resume and series_uid and series_uid in completed_series_uids:
+                series_already_exists = True
+                print(
+                    f"Skipping already downloaded series: "
+                    f"{patient_serie_output_dir} (logged complete)"
+                )
 
             # Retrieving files of current patient, study and serie.
             # TODO: handle and report error 'F: cannot listen on port 104,
             # insufficient privileges' in movescu
             if save and not series_already_exists:
+                if verbose:
+                    print(
+                        f"Retrieving series {serie['SeriesInstanceUID']} -> {patient_serie_output_dir}",
+                        flush=True,
+                    )
                 get(
                     client_aet,
                     query_attributes["StudyDate"],  # serie["StudyDate"],
@@ -486,6 +516,11 @@ def retrieve_dicoms_using_table(
                 )
 
             if move and not series_already_exists:
+                if verbose:
+                    print(
+                        f"Moving series {serie['SeriesInstanceUID']} to {move_aet}",
+                        flush=True,
+                    )
                 move_remote(
                     client_aet,
                     query_attributes["StudyDate"],  # serie["StudyDate"],
@@ -510,34 +545,37 @@ def retrieve_dicoms_using_table(
             log_entry = {col: query_attributes[col] for col in table.columns}
             study_uid = serie["StudyInstanceUID"]
             series_number = serie["SeriesNumber"]
-            num_files_found = (len(os.listdir(patient_serie_output_dir))
-                               if os.path.isdir(patient_serie_output_dir) else 0)
+            series_uid = serie.get("SeriesInstanceUID", "")
+            num_files_found = (
+                len(os.listdir(patient_serie_output_dir))
+                if os.path.isdir(patient_serie_output_dir)
+                else 0
+            )
+            completed = save and (not series_already_exists) and num_files_found > 0
 
             log_entry["StudyInstanceUID"] = study_uid
+            log_entry["SeriesInstanceUID"] = series_uid
             log_entry["SeriesNumber"] = series_number
             log_entry["FilesFound"] = num_files_found
+            log_entry["Completed"] = completed
 
-            # Append the log entry for this series
-            log_entries.append(log_entry.copy())
+            # Append the log entry for this series immediately
+            fieldnames = list(table.columns) + [
+                "StudyInstanceUID",
+                "SeriesInstanceUID",
+                "SeriesNumber",
+                "FilesFound",
+                "Completed",
+            ]
+            file_exists = os.path.isfile(log_file_path)
+            with open(log_file_path, "a", newline="", encoding="utf-8") as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                if not file_exists:
+                    writer.writeheader()
+                writer.writerow(log_entry)
 
             if os.path.isfile(current_findscu_dump_file):
                 os.remove(current_findscu_dump_file)
-
-    # Path to save the CSV file
-    log_file_path = os.path.join(output_dir, "logs", "pacsifier_log.csv")
-
-    # Write the log entries to a CSV file
-    with open(log_file_path, "w", newline="", encoding="utf-8") as csvfile:
-        # Define the fieldnames for the CSV (dynamic from query file + additional fields)
-        fieldnames = list(table.columns) + ["StudyInstanceUID", "SeriesNumber", "FilesFound"]
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-
-        # Write the header
-        writer.writeheader()
-
-        # Write all log entries
-        for log_entry in log_entries:
-            writer.writerow(log_entry)
 
     print(f"Log written to {log_file_path}")
     # Clean the tmp folder
@@ -712,6 +750,12 @@ def get_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Resume extraction by skipping already downloaded series",
     )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Print verbose progress information during retrieval",
+    )
 
     return parser
 
@@ -728,6 +772,15 @@ def main():
     info = args.info
     move = args.move
     resume = args.resume
+    verbose = args.verbose
+    if verbose:
+        os.environ["PACSIFIER_VERBOSE"] = "1"
+        os.environ["PYTHONUNBUFFERED"] = "1"
+        try:
+            sys.stdout.reconfigure(line_buffering=True)
+            sys.stderr.reconfigure(line_buffering=True)
+        except AttributeError:
+            pass
 
     # Reading config file.
     try:
@@ -774,7 +827,16 @@ def main():
             sys.exit(1)
 
         check_query_table_allowed_filters(table)
-        retrieve_dicoms_using_table(table, parameters, output_dir, save, info, move, resume)
+        retrieve_dicoms_using_table(
+            table,
+            parameters,
+            output_dir,
+            save,
+            info,
+            move,
+            resume,
+            verbose,
+        )
 
     elif args.upload:
         upload_directory = os.path.normcase(os.path.abspath(

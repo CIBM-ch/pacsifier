@@ -34,16 +34,16 @@ For more details about the DCMTK toolkit and available tools, refer to the [DCMT
 # Building and testing
 
 
-## Building the pacsifier Docker image from the repo
-
+## Building the pacsifier Docker image from the repo (use sudo if permission is denied)
+```bash
    cd /path/to/PACSIFIER
    make build-docker
-
-## Running the test suite 
-
+```
+## Running the test suite (if error: Error running Docker command: Command 'docker' returned non-zero exit status 1. Error: Docker not found. -> use PATH=$PATH sudo make test)
+```bash
    cd /path/to/PACSIFIER
    make test
-
+```
 # Installation
 
 ## Step 1: Clone the Repository

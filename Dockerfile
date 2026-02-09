@@ -26,9 +26,11 @@ RUN mkdir -p /opt/conda && \
     curl -sSL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -bfp /opt/conda && \
     rm -rf /tmp/miniconda.sh && \
-    conda update -n base -c defaults conda && \
-    conda config --add channels conda-forge && \
-    conda clean --all --yes
+    /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
+    /opt/conda/bin/conda update -n base -c defaults conda && \
+    /opt/conda/bin/conda config --add channels conda-forge && \
+    /opt/conda/bin/conda clean --all --yes
 
 ###############################################################################
 # Create conda environment from environment file
@@ -57,7 +59,7 @@ COPY README.md ./README.md
 COPY pacsifier ./pacsifier
 
 # Install pacsifier with static version taken from the argument
-ARG VERSION=unknown
+ARG VERSION=1.0.0.dev0
 RUN echo "${VERSION}" > /app/pacsifier/pacsifier/VERSION \
     && conda run -n pacsifier_minimal pip install -e ".[all]" \
     && conda run -n pacsifier_minimal pip install pytest-order

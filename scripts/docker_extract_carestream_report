@@ -1,0 +1,28 @@
+#!/bin/bash
+
+DATA_PATH=""
+EXTRA_ARGS=()
+
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    -d|--data_folder)
+      DATA_PATH="$2"
+      shift 2
+      ;;
+    *)
+      EXTRA_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$DATA_PATH" ]]; then
+  echo "Error: Missing required arguments. Ensure you provide -d (data folder)."
+  exit 1
+fi
+
+echo "Running: sudo docker run --rm --net=host -v $DATA_PATH:/data pacsifier:1.0.0.dev0 pacsifier-extract-carestream-report ${EXTRA_ARGS[*]}"
+
+sudo docker run --rm --net=host \
+  -v "$DATA_PATH:/data" \
+  pacsifier:1.0.0.dev0 pacsifier-extract-carestream-report "${EXTRA_ARGS[@]}"
