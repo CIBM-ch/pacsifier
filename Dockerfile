@@ -59,7 +59,7 @@ COPY README.md ./README.md
 COPY pacsifier ./pacsifier
 
 # Install pacsifier with static version taken from the argument
-ARG VERSION=1.0.0.dev0
+ARG VERSION=1.0.0
 RUN echo "${VERSION}" > /app/pacsifier/pacsifier/VERSION \
     && conda run -n pacsifier_minimal pip install -e ".[all]" \
     && conda run -n pacsifier_minimal pip install pytest-order

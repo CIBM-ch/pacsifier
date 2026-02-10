@@ -31,10 +31,10 @@ if [[ -z "$CONFIG_PATH" || -z "$QUERY_PATH" || -z "$OUTPUT_PATH" ]]; then
   exit 1
 fi
 
-echo "Running: sudo docker run --rm --net=host -v $CONFIG_PATH:/config.json -v $QUERY_PATH:/query.csv -v $OUTPUT_PATH:/output pacsifier:1.0.0.dev0 pacsifier-get-pseudonyms ${EXTRA_ARGS[*]}"
+echo "Running: sudo docker run --rm --net=host -v $CONFIG_PATH:/config.json -v $QUERY_PATH:/query.csv -v $OUTPUT_PATH:/output pacsifier:1.0.0 pacsifier-get-pseudonyms ${EXTRA_ARGS[*]}"
 
 sudo docker run --rm --net=host \
   -v "$CONFIG_PATH:/config.json" \
   -v "$QUERY_PATH:/query.csv" \
   -v "$OUTPUT_PATH:/output" \
-  pacsifier:1.0.0.dev0 pacsifier-get-pseudonyms "${EXTRA_ARGS[@]}"
+  pacsifier:1.0.0 pacsifier-get-pseudonyms "${EXTRA_ARGS[@]}"

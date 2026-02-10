@@ -21,8 +21,8 @@ if [[ -z "$DATA_PATH" ]]; then
   exit 1
 fi
 
-echo "Running: sudo docker run --rm --net=host -v $DATA_PATH:/data pacsifier:1.0.0.dev0 pacsifier-extract-carestream-report ${EXTRA_ARGS[*]}"
+echo "Running: sudo docker run --rm --net=host -v $DATA_PATH:/data pacsifier:1.0.0 pacsifier-extract-carestream-report ${EXTRA_ARGS[*]}"
 
 sudo docker run --rm --net=host \
   -v "$DATA_PATH:/data" \
-  pacsifier:1.0.0.dev0 pacsifier-extract-carestream-report "${EXTRA_ARGS[@]}"
+  pacsifier:1.0.0 pacsifier-extract-carestream-report "${EXTRA_ARGS[@]}"

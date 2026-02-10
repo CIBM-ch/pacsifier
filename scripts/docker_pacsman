@@ -34,14 +34,14 @@ if [[ -z "$CONFIG_PATH" || -z "$QUERY_PATH" || -z "$OUTPUT_PATH" ]]; then
 fi
 
 # Debug: Print the Docker command being executed
-echo "Running: sudo docker run --rm --net=host -v $CONFIG_PATH:/config.json -v $QUERY_PATH:/query.csv -v $OUTPUT_PATH:/output pacsifier:1.0.0.dev0 pacsifier -c /config.json -q /query.csv -d /output ${EXTRA_ARGS[*]}"
+echo "Running: sudo docker run --rm --net=host -v $CONFIG_PATH:/config.json -v $QUERY_PATH:/query.csv -v $OUTPUT_PATH:/output pacsifier:1.0.0 pacsifier -c /config.json -q /query.csv -d /output ${EXTRA_ARGS[*]}"
 
 # Run the Docker command with proper volume mounts
 sudo docker run --rm --net=host \
   -v "$CONFIG_PATH:/config.json" \
   -v "$QUERY_PATH:/query.csv" \
   -v "$OUTPUT_PATH:/output" \
-  pacsifier:1.0.0.dev0 pacsifier \
+  pacsifier:1.0.0 pacsifier \
   -c /config.json \
   -q /query.csv \
   -d /output "${EXTRA_ARGS[@]}"

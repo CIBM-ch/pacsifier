@@ -439,6 +439,16 @@ Notes :
 
 ## Config file 
 
+### Coming from PACSMAN
+
+If you are migrating a PACSMAN `config.json`, update the key name and types:
+- `server_ip` → `server_address`
+- `port`: string → integer
+- `move_port`: string → integer
+- `batch_size`: string → integer
+- `batch_wait_time`: string → integer
+
+
 The config file is a json file that must include exactly these keys: 
 - `server_address`: PACS server IP / URL address
 - `port`: PACS server port number 

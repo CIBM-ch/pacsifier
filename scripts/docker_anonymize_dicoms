@@ -26,9 +26,9 @@ if [[ -z "$INPUT_PATH" || -z "$OUTPUT_PATH" ]]; then
   exit 1
 fi
 
-echo "Running: sudo docker run --rm --net=host -v $INPUT_PATH:/input -v $OUTPUT_PATH:/output pacsifier:1.0.0.dev0 pacsifier-anonymize ${EXTRA_ARGS[*]}"
+echo "Running: sudo docker run --rm --net=host -v $INPUT_PATH:/input -v $OUTPUT_PATH:/output pacsifier:1.0.0 pacsifier-anonymize ${EXTRA_ARGS[*]}"
 
 sudo docker run --rm --net=host \
   -v "$INPUT_PATH:/input" \
   -v "$OUTPUT_PATH:/output" \
-  pacsifier:1.0.0.dev0 pacsifier-anonymize "${EXTRA_ARGS[@]}"
+  pacsifier:1.0.0 pacsifier-anonymize "${EXTRA_ARGS[@]}"
