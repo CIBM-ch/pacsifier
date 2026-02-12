@@ -485,12 +485,23 @@ def retrieve_dicoms_using_table(
             # Check if series already exists and resume is enabled
             series_already_exists = False
             series_uid = str(serie.get("SeriesInstanceUID", "")).strip()
-            if resume and series_uid and series_uid in completed_series_uids:
-                series_already_exists = True
-                print(
-                    f"Skipping already downloaded series: "
-                    f"{patient_serie_output_dir} (logged complete)"
-                )
+            if resume:
+                # Check log for completed series
+                if series_uid and series_uid in completed_series_uids:
+                    series_already_exists = True
+                    print(
+                        f"Skipping already downloaded series: "
+                        f"{patient_serie_output_dir} (logged complete)"
+                    )
+                # Check for files in the directory
+                elif os.path.isdir(patient_serie_output_dir):
+                    files = [f for f in os.listdir(patient_serie_output_dir) if f.endswith(".dcm")]
+                    if files:
+                        series_already_exists = True
+                        print(
+                            f"Skipping already downloaded series: "
+                            f"{patient_serie_output_dir} (files present)"
+                        )
 
             # Retrieving files of current patient, study and serie.
             # TODO: handle and report error 'F: cannot listen on port 104,

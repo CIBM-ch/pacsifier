@@ -56,7 +56,7 @@ def test_tag_all_dicoms_within_root_folder(test_dir):
     folder_to_tag = os.path.join(test_dir, "tmp", "test_data", "dicomseries_tagged_all")
     if not os.path.exists(folder_to_tag):
         os.makedirs(folder_to_tag, exist_ok=True)
-    patient_ids = ["PACSIFIER1", "PACSIFIER2", "PACSIFIER3"]
+    patient_ids = ["PACSMAN1", "PACSIFIER2", "PACSIFIER3"]
     session_folders = ["ses-20231006", "ses-20231016", "ses-20231026"]
     series_folders = ["00000_series", "00001_series"]
     files = ["slice0.dcm", "slice1.dcm", "slice2.dcm"]
@@ -86,7 +86,7 @@ def test_tag_all_dicoms_within_root_folder(test_dir):
                     # to load the different series.
                     dataset.save_as(os.path.join(series_path, file))
 
-    patient_codes = ["PACSIFIER1coded", "PACSIFIER2coded", "PACSIFIER3coded"]
+    patient_codes = ["PACSMAN1coded", "PACSIFIER2coded", "PACSIFIER3coded"]
     day_shifts = ["10", "20", "30"]
 
     tag_all_dicoms_within_root_folder(

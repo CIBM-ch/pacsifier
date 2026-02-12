@@ -234,7 +234,7 @@ def test_retrieve_dicoms_using_table(test_dir):
     # Assert the first six files of the list are correct
     output_files = glob(os.path.join(out_directory, "sub-*/ses-*/*/*"))
     known_files_dir = os.path.join(
-        test_dir, "tmp", "test_set", "sub-PACSIFIER1", "ses-20231016"
+        test_dir, "tmp", "test_set", "sub-PACSMAN1", "ses-20231016"
     )
     known_files_dir = os.path.join(known_files_dir, "00000-No_series_description")
     known_filenames = [
@@ -268,7 +268,7 @@ def _build_minimal_table():
     record = {field: "" for field in ALLOWED_FILTERS}
     record.update(
         {
-            "PatientID": "PACSIFIER1",
+            "PatientID": "PACSMAN1",
             "StudyDate": "20231016",
             "SeriesDescription": "TestSeries",
             "SeriesNumber": "1",
@@ -295,7 +295,7 @@ def _build_minimal_parameters():
 def _mock_series_entry():
     return [
         {
-            "PatientID": "PACSIFIER1",
+            "PatientID": "PACSMAN1",
             "StudyDate": "20231016",
             "StudyTime": "",
             "SeriesDescription": "TestSeries",
@@ -331,7 +331,7 @@ def _setup_retrieve_mocks(monkeypatch, series_list, get_stub):
 def _expected_series_dir(output_dir: Path) -> Path:
     return (
         output_dir
-        / "sub-PACSIFIER1"
+        / "sub-PACSMAN1"
         / "ses-20231016"
         / "00001-TestSeries"
     )
