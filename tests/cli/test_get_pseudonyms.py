@@ -94,7 +94,7 @@ def test_convert_csv_to_deid_json(test_dir):
     json_new = convert_csv_to_deid_json(queryfile, project_name)
     assert json_new == {
         "project": "PACSIFIERCohort",
-        "PatientIDList": [{"PatientID": "PACSMAN1"}],
+        "PatientIDList": [{"PatientID": "PACSIFIER1"}],
     }
 
     # Test with an invalid file

@@ -83,7 +83,7 @@ Recommended (wrapper scripts)
 
 .. code-block:: bash
 
-		docker_pacsman -c config.json -q query.csv -d /output --save
+		docker_pacsifier -c config.json -q query.csv -d /output --save
 
 See :ref:`docker_wrappers` for the full list of wrapper scripts and examples.
 

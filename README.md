@@ -230,7 +230,7 @@ PACSIFIER includes convenient Docker wrapper scripts that allow users to run CLI
 
 The following Docker wrapper scripts are available:
 
-- `docker_pacsman`: Docker wrapper for the main `pacsifier` command
+- `docker_pacsifier`: Docker wrapper for the main `pacsifier` command
 - `docker_get_pseudonyms`: Docker wrapper for `pacsifier-get-pseudonyms`
 - `docker_add_karnak_tags`: Docker wrapper for `pacsifier-add-karnak-tags`
 - `docker_anonymize_dicoms`: Docker wrapper for `pacsifier-anonymize`
@@ -251,23 +251,23 @@ By default, the wrapper scripts use the `pacsifier:latest` Docker image. You can
 
 2. **CLI Flag** (for one-time use):
    ```bash
-   docker_pacsman --image pacsifier:1.0.0 -c config.json -q query.csv -d /output --save
+   docker_pacsifier --image pacsifier:1.0.0 -c config.json -q query.csv -d /output --save
    ```
 
 ## Usage Examples
 
-### docker_pacsman
+### docker_pacsifier
 
 Run the main PACSIFIER command:
 
 ```bash
-docker_pacsman -c config.json -i -q query.csv -d /output --save
+docker_pacsifier -c config.json -i -q query.csv -d /output --save
 ```
 
 Resume an interrupted extraction:
 
 ```bash
-docker_pacsman -c config.json -q query.csv -d /output --save --resume
+docker_pacsifier -c config.json -q query.csv -d /output --save --resume
 ```
 
 ### docker_get_pseudonyms
@@ -331,7 +331,7 @@ The wrapper scripts automatically handle Docker volume mounting. When you provid
 For example, when you run:
 
 ```bash
-docker_pacsman -c /home/user/config.json -q /home/user/query.csv -d /home/user/output --save
+docker_pacsifier -c /home/user/config.json -q /home/user/query.csv -d /home/user/output --save
 ```
 
 The wrapper script:

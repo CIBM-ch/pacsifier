@@ -23,7 +23,7 @@ from unittest.mock import patch, MagicMock
 from pacsifier.cli.docker_wrappers import (
     get_docker_image_name,
     run_docker_command,
-    docker_pacsman,
+    docker_pacsifier,
     docker_get_pseudonyms,
     docker_add_karnak_tags,
     docker_anonymize_dicoms,
@@ -154,8 +154,8 @@ def test_run_docker_command_interactive_flag_position(mock_run):
 
 
 @patch('pacsifier.cli.docker_wrappers.run_docker_command')
-def test_docker_pacsman_basic(mock_run_docker, tmp_path):
-    """Test docker_pacsman constructs correct command."""
+def test_docker_pacsifier_basic(mock_run_docker, tmp_path):
+    """Test docker_pacsifier constructs correct command."""
     config_file = tmp_path / 'config.json'
     config_file.write_text('{}')
     query_file = tmp_path / 'query.csv'
@@ -163,9 +163,9 @@ def test_docker_pacsman_basic(mock_run_docker, tmp_path):
     output_dir = tmp_path / 'output'
     output_dir.mkdir()
 
-    with patch('sys.argv', ['docker_pacsman', '-c', str(config_file),
+    with patch('sys.argv', ['docker_pacsifier', '-c', str(config_file),
                             '-i', '-q', str(query_file), '-d', str(output_dir)]):
-        docker_pacsman()
+        docker_pacsifier()
 
     mock_run_docker.assert_called_once()
     call_args = mock_run_docker.call_args[0][0]
@@ -384,9 +384,9 @@ def test_docker_wrappers_custom_image(mock_run_docker, tmp_path):
     output_dir = tmp_path / 'output'
     output_dir.mkdir()
 
-    with patch('sys.argv', ['docker_pacsman', '-c', str(config_file),
+    with patch('sys.argv', ['docker_pacsifier', '-c', str(config_file),
                             '--image', 'pacsifier:custom', '-d', str(output_dir)]):
-        docker_pacsman()
+        docker_pacsifier()
 
     # Check that environment variable was set
     assert os.environ.get('PACSIFIER_DOCKER_IMAGE') == 'pacsifier:custom'

@@ -79,15 +79,15 @@ def run_docker_command(command_args, additional_volumes=None, additional_args=No
         sys.exit(1)
 
 
-def docker_pacsman():
+def docker_pacsifier():
     """Docker wrapper for the main pacsifier command."""
     parser = argparse.ArgumentParser(
         description="Run pacsifier via Docker",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  docker_pacsman -c config.json -i -q query.csv -d /output
-  docker_pacsman --config /path/to/config.json --info \\
+  docker_pacsifier -c config.json -i -q query.csv -d /output
+  docker_pacsifier --config /path/to/config.json --info \\
       --query /path/to/query.csv --directory /output
         """
     )
@@ -433,7 +433,7 @@ Examples:
 
 if __name__ == "__main__":
     print("This module contains Docker wrapper functions for PACSIFIER CLI commands.")
-    print("Use the individual wrapper scripts (docker_pacsman, docker_get_pseudonyms, etc.)")
+    print("Use the individual wrapper scripts (docker_pacsifier, docker_get_pseudonyms, etc.)")
     sys.exit(1)
 # Copyright 2018-2024 Lausanne University Hospital and University of Lausanne,
 # Switzerland & Contributors
@@ -516,15 +516,15 @@ def run_docker_command(command_args, additional_volumes=None, additional_args=No
         sys.exit(1)
 
 
-def docker_pacsman():
+def docker_pacsifier():
     """Docker wrapper for the main pacsifier command."""
     parser = argparse.ArgumentParser(
         description="Run pacsifier via Docker",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  docker_pacsman -c config.json -i -q query.csv -d /output
-  docker_pacsman --config /path/to/config.json --info \\
+  docker_pacsifier -c config.json -i -q query.csv -d /output
+  docker_pacsifier --config /path/to/config.json --info \\
       --query /path/to/query.csv --directory /output
         """
     )
@@ -866,5 +866,5 @@ Examples:
 
 if __name__ == "__main__":
     print("This module contains Docker wrapper functions for PACSIFIER CLI commands.")
-    print("Use the individual wrapper scripts (docker_pacsman, docker_get_pseudonyms, etc.)")
+    print("Use the individual wrapper scripts (docker_pacsifier, docker_get_pseudonyms, etc.)")
     sys.exit(1)
