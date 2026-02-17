@@ -46,7 +46,7 @@ Usage Examples
 ==============
 
 docker_pacsifier
---------------
+----------------
 
 Run the main PACSIFIER command:
 

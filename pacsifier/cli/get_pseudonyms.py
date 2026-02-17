@@ -16,9 +16,9 @@
 """Script to get the new pseudonyms and day shifts in JSON format.
 
 The script can be used in two modes:
+
 - de-id: use the de-ID API to get new pseudonyms and day shifts
-- custom: use a custom mapping file in CSV format that specifies the
-  mapping of old / new pseudonyms
+- custom: use a custom mapping file in CSV format that specifies the mapping of old / new pseudonyms
 
 In case of the de-id mode, the script requires a PACSIFIER query file and a
 configuration file for the de-ID API.
@@ -28,12 +28,13 @@ CSV format.
 The script saves the new pseudonyms and day shifts as JSON files in the
 specified output directory.
 
-Example usage:
-    python get_pseudonyms.py --mode de-id --config config.json
-        --queryfile query.csv --project_name PACSIFIERCohort
+Example usage::
+
+    python get_pseudonyms.py --mode de-id --config config.json \\
+        --queryfile query.csv --project_name PACSIFIERCohort \\
         --out_directory /path/to/output
-    python get_pseudonyms.py --mode custom --mappingfile mapping.csv
-        --shift-days --project_name PACSIFIERCohort
+    python get_pseudonyms.py --mode custom --mappingfile mapping.csv \\
+        --shift-days --project_name PACSIFIERCohort \\
         --out_directory /path/to/output
 
 """

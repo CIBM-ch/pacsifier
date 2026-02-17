@@ -19,7 +19,7 @@ It consists of the following commands:
 In the following sections, we will describe how to run these commands in a shell and in a Docker container.
 
 Running ``PACSIFIER`` commands in a shell
-=======================================
+=========================================
 
 ``pacsifier`` command
 ----------------------
@@ -64,7 +64,7 @@ Running ``PACSIFIER`` commands in a shell
 		:prog: pacsifier-add-karnak-tags
 
 ``pacsifier-extract-carestream-report`` command
-----------------------------------------------
+-----------------------------------------------
 
 .. argparse::
 		:ref: pacsifier.cli.extract_carestream_report.get_parser

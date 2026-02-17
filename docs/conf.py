@@ -272,6 +272,7 @@ html_context = {"release_date": __release_date__}
 
 # Activate autosectionlabel plugin
 autosectionlabel_prefix_document = True
+autosectionlabel_maxdepth = 2
 
 # -- Options for LaTeX output --------------------------------------------------
 
