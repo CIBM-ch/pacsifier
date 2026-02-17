@@ -52,7 +52,13 @@ Run the main PACSIFIER command:
 
 .. code-block:: bash
 
-   docker_pacsifier -c config.json -i -q query.csv -d /output --save
+   docker_pacsifier -c config.json -i -s -q query.csv -d /output
+
+Resume an interrupted extraction:
+
+.. code-block:: bash
+
+   docker_pacsifier -c config.json -q query.csv -d /output --save --resume
 
 docker_get_pseudonyms
 ---------------------

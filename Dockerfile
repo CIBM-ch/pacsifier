@@ -52,6 +52,7 @@ WORKDIR /app/pacsifier
 # Copy necessary contents of this repository.
 COPY ./.coveragerc ./.coveragerc
 COPY ./.pytest.ini ./.pytest.ini
+COPY pyproject.toml ./pyproject.toml
 COPY setup.py ./setup.py
 COPY setup.cfg ./setup.cfg
 COPY README.md ./README.md

@@ -19,7 +19,7 @@ Introduction
 
 `PACSIFIER` is an open-source tool written in Python and encapsulated in a Docker image to query, retrieve, and edit data  in DICOM format from a radiological PACS server.
 
-Aknowledgment
+Acknowledgment
 --------------
 
 If your are using `PACSIFIER` in your work, please acknowledge this software and its dependencies. See :ref:`Citing <citing>` for more details.

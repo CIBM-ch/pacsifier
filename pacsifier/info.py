@@ -22,7 +22,7 @@ __version__ = "1.0.0"
 
 __current_year__ = datetime.datetime.now().strftime("%Y")
 
-__release_date__ = "DD.MM.{}".format(__current_year__)
+__release_date__ = "17.02.{}".format(__current_year__)
 
 __author__ = "Translational Machine Learning Lab"
 
@@ -33,13 +33,13 @@ __copyright__ = (
 )
 
 __credits__ = (
-    "Contributors: please check the ``.zenodo.json`` file at the top-level folder"
+    "Contributors: please check the ``.zenodo.json`` file at the top-level folder "
     "of the repository"
 )
 __license__ = "Apache 2.0"
 __maintainer__ = "Translational Machine Learning Lab"
 __email__ = "translationalML@gmail.com"
-__status__ = "Beta"
+__status__ = "Production/Stable"
 
 __packagename__ = "pacsifier"
 __container_name__ = "pacsifier"
@@ -52,4 +52,4 @@ DOWNLOAD_URL = "https://github.com/TranslationalML/{name}/archive/{ver}.tar.gz".
     name=__packagename__, ver=__version__
 )
 
-DOCKER_HUB = "TO_BE_COMPLETED_ONCE_IT_IS_DEPLOYED"
+DOCKER_REGISTRY = "quay.io/translationalml/pacsifier"

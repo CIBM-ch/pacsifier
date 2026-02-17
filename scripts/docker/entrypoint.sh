@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018-2024 Lausanne University Hospital and University of Lausanne,
+# Copyright 2018-2026 Lausanne University Hospital and University of Lausanne,
 # Switzerland & Contributors
 
 # Licensed under the Apache License, Version 2.0 (the "License");
