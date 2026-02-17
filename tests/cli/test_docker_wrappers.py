@@ -149,8 +149,9 @@ def test_run_docker_command_interactive_flag_position(mock_run):
     assert call_args[2] == '--rm'
     assert call_args[3] == '--net=host'
     assert call_args[4] == '-i'  # Interactive flag should be here
-    assert call_args[5] == '-e'  # Environment variable flag
-    assert call_args[6] == 'PYTHONUNBUFFERED=1'  # Environment variable value
+    assert call_args[5] == '-t'  # Environment variable flag
+    assert call_args[6] == '-e'
+    assert call_args[7] == 'PYTHONUNBUFFERED=1'  # Environment variable value
 
 
 @patch('pacsifier.cli.docker_wrappers.run_docker_command')
