@@ -1,0 +1,34 @@
+#!/bin/bash
+
+INPUT_PATH=""
+NEW_IDS_PATH=""
+EXTRA_ARGS=()
+
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    -d|--in_folder)
+      INPUT_PATH="$2"
+      shift 2
+      ;;
+    -n|--new_ids)
+      NEW_IDS_PATH="$2"
+      shift 2
+      ;;
+    *)
+      EXTRA_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$INPUT_PATH" || -z "$NEW_IDS_PATH" ]]; then
+  echo "Error: Missing required arguments. Ensure you provide -d (input folder) and -n (new IDs file)."
+  exit 1
+fi
+
+echo "Running: sudo docker run --rm --net=host -v $INPUT_PATH:/input -v $NEW_IDS_PATH:/new_ids.json pacsifier:1.0.0 pacsifier-add-karnak-tags ${EXTRA_ARGS[*]}"
+
+sudo docker run --rm --net=host \
+  -v "$INPUT_PATH:/input" \
+  -v "$NEW_IDS_PATH:/new_ids.json" \
+  pacsifier:1.0.0 pacsifier-add-karnak-tags "${EXTRA_ARGS[@]}"

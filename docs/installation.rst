@@ -1,130 +1,196 @@
 .. _installation:
 
 ***********************************
-Installation Instructions for Users
+Installation Instructions
 ***********************************
 
+PACSIFIER can be installed in several ways, ordered from simplest to most flexible:
+
+1. :ref:`install-docker-pull` — Pre-built Docker image from Quay.io *(recommended for most users)*
+2. :ref:`install-pip` — Install via ``pip`` from PyPI
+3. :ref:`install-docker-build` — Build the Docker image locally
+4. :ref:`install-source` — Install from source *(for developers)*
+
+
+.. _install-docker-pull:
+
+Option 1: Pre-built Docker Image (Recommended)
+===============================================
+
+The simplest way to use PACSIFIER. No need to clone the repository or install any dependencies — everything is bundled in the Docker image.
 
 Prerequisites
-==============
+-------------
 
-Docker
-------
+Ensure Docker is installed on your system:
 
-Ensure that Docker is installed on your system. Docker allows PACSIFIER to run in a containerized environment, simplifying the setup and deployment. Follow the appropriate installation guide for your operating system:
+* **Linux**: Follow the `official Docker installation guide <https://docs.docker.com/engine/install/ubuntu/>`_.
+* **Windows (Recommended: WSL)**: Install Docker Desktop for Windows and enable WSL 2 integration. Follow the `Docker Desktop installation guide <https://docs.docker.com/desktop/install/windows-install/>`_.
+* **macOS**: Follow the `Docker Desktop installation guide <https://docs.docker.com/desktop/install/mac-install/>`_.
 
-* **Linux**: Follow the official Docker installation guide.
-* **Windows (Recommended: WSL)**: Install Docker Desktop for Windows and enable WSL 2 integration. Follow the Docker Desktop installation guide. Make sure to enable the "Use the WSL 2 based engine" option during installation.
-* **macOS**: Follow the Docker Desktop installation guide.
-
-* Set Docker to be managed as a non-root user
-
-  * Open a terminal
-
-  * Create the docker group::
-
-    $ sudo groupadd docker
-
-  * Add the current user to the docker group::
-
-    $ sudo usermod -G docker -a $USER
-
-  * Reboot
-
-    After reboot, test if docker is managed as non-root::
-
-      $ docker run hello-world
-
-After installation, verify that Docker is correctly installed by running:
+On Linux, set Docker to be managed as a non-root user:
 
 .. code-block:: bash
 
-    docker --version
+    sudo groupadd docker
+    sudo usermod -G docker -a $USER
+    # Reboot, then verify:
+    docker run hello-world
 
-DCMTK
------
+Pull and Run
+------------
 
-DCMTK (DICOM Toolkit) is required for interacting with DICOM servers. You can install it as follows:
+Pull the latest release image from Quay.io:
 
-* **Linux (Ubuntu-based systems)**:
+.. code-block:: bash
 
-  .. code-block:: bash
+    docker pull quay.io/translationalml/pacsifier:latest
+
+Test that it works:
+
+.. code-block:: bash
+
+    docker run --rm quay.io/translationalml/pacsifier:latest pacsifier --version
+
+Run a query:
+
+.. code-block:: bash
+
+    docker run --rm --net=host \
+        -v /path/to/my_dir:/base \
+        quay.io/translationalml/pacsifier:latest \
+        pacsifier --save --info --queryfile /base/my_query.csv \
+            --config /base/my_config.json --out_directory /base/my_output_dir
+
+.. tip::
+    You can pin to a specific version instead of ``latest`` (e.g., ``quay.io/translationalml/pacsifier:1.0.0``).
+    See `available tags on Quay.io <https://quay.io/repository/translationalml/pacsifier?tab=tags>`_.
+
+.. note::
+    DCMTK and all other dependencies are included inside the Docker image.
+    You do **not** need to install them separately.
+
+We refer to :ref:`cmdusage-docker` for more details on running the Docker image,
+and :ref:`docker_wrappers` for convenience wrapper scripts that simplify the
+``docker run`` command syntax.
+
+
+.. _install-pip:
+
+Option 2: Install via pip
+=========================
+
+PACSIFIER is published on `PyPI <https://pypi.org/project/pacsifier/>`_:
+
+.. code-block:: bash
+
+    pip install pacsifier
+
+.. important::
+    When installing via pip, you must also install **DCMTK** on your system
+    for DICOM network communication:
+
+    * **Linux (Ubuntu-based)**: ``sudo apt install dcmtk``
+    * **Windows (WSL)**: Same command within your WSL environment
+    * **macOS**: ``brew install dcmtk``
+
+    For more details, see the `DCMTK documentation <https://dicom.offis.de/en/dcmtk/dcmtk-tools/>`_.
+
+Verify the installation:
+
+.. code-block:: bash
+
+    pacsifier --help
+
+
+.. _install-docker-build:
+
+Option 3: Build Docker Image Locally
+=====================================
+
+If you need the latest development version or want to customize the Docker image,
+you can build it from the repository:
+
+.. code-block:: bash
+
+    git clone https://github.com/TranslationalML/pacsifier.git
+    cd pacsifier
+    make build-docker
+
+Inspect the built image:
+
+.. code-block:: bash
+
+    docker images | grep pacsifier
+
+Test the image:
+
+.. code-block:: bash
+
+    docker run --rm pacsifier:latest pacsifier --version
+
+.. note::
+    DCMTK is included inside the Docker image. You do **not** need to install it separately.
+
+
+.. _install-source:
+
+Option 4: Install from Source (For Developers)
+===============================================
+
+For developing or customizing PACSIFIER:
+
+1. **Install DCMTK** (required for DICOM network communication):
+
+   .. code-block:: bash
 
       sudo apt install dcmtk
 
-* **Windows (With WSL)**: Follow the same instructions as above within your WSL environment.
+   For other operating systems, see the `DCMTK documentation <https://dicom.offis.de/en/dcmtk/dcmtk-tools/>`_.
 
-For more details about the DCMTK toolkit and available tools, refer to the `DCMTK tools documentation <https://dicom.offis.de/en/dcmtk/dcmtk-tools/>`_.
+2. **Clone the repository:**
 
-.. _manual-build-docker-image:
+   .. code-block:: bash
 
-Building the Docker Image
-=========================
+      git clone https://github.com/TranslationalML/pacsifier.git
+      cd pacsifier
 
-The Docker image can be built from the Makefile provided in the `PACSIFIER` repository as follows:
+3. **Create a Python environment** (Python >= 3.10 required):
 
-.. code-block:: bash
-
-    $ # Clone locally the PACSIFIER repository
-    $ git clone https://github.com/TranslationalML/pacsifier.git pacsifier
-    $ # Go to the pacsifier directory
-    $ cd pacsifier
-    $ # Build the docker image
-    $ make -B build-docker
-
-You can then inspect the Docker image version tag with the following command:
-
-.. code-block:: bash
-
-    $ docker images
-    REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
-    pacsifier          <version>           0e0b0b0b0b0b        1 minute ago        1.74GB
-
-Once you know the image tag, you can test the built image by running the command which returns the version installed in the Docker image as follows:
-
-.. code-block:: bash
-
-    $ docker run -it --rm \
-        pacsifier:<version> \
-        --version
-
-We refer to :ref:`cmdusage-docker` for more details on how to run the Docker image.
-
-Installation from Source (For Developers)
-=========================================
-
-If you need to develop or customize PACSIFIER, you can install it from source:
-
-1. **Create a Python Environment:**
-
-   Use Miniconda or another virtual environment manager to create a clean Python environment:
+   Using conda with a manual environment:
 
    .. code-block:: bash
 
       conda create -n pacsifier_minimal python=3.10
       conda activate pacsifier_minimal
 
-2. **Install PACSIFIER:**
+   Or using the provided environment file:
 
-   With the environment activated, run:
+   .. code-block:: bash
+
+      conda env create -f environment/environment_minimal_202401.yml
+      conda activate pacsifier_minimal
+
+   Or using ``venv``:
+
+   .. code-block:: bash
+
+      python3 -m venv venv
+      source venv/bin/activate
+
+4. **Install PACSIFIER in editable mode:**
 
    .. code-block:: bash
 
       pip install -e .
 
-   This will install PACSIFIER in editable mode, allowing you to make and test changes easily.
-
-3. **Optional: Install Additional Development Tools**
-
-   If you plan to work on documentation or run tests, you may want to install additional dependencies:
+   For full development (documentation, tests, linting):
 
    .. code-block:: bash
 
-      pip install ".[dev,docs,test]"
+      pip install -e ".[all]"
 
-4. **Verify the Installation:**
-
-   To ensure everything is set up correctly, you can run:
+5. **Verify the installation:**
 
    .. code-block:: bash
 

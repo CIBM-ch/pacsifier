@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Add private DICOM tags to several studies so that Karnak can de-identify them using provided patient codes and route them to the appropriate Kheops album."""
+"""Add private DICOM tags to several studies so that Karnak can de-identify them
+using provided patient codes and route them to the appropriate Kheops album."""
 
 import sys
 import pydicom
@@ -31,7 +32,8 @@ def tag_dicom_file(
     patient_shift: str,
     album_name: str,
 ) -> None:
-    """Tag the dicom image located at filename by adding patient code and Kheops album name to private tags for subsequent de-identification.
+    """Tag the dicom image located at filename by adding patient code and
+    Kheops album name to private tags for subsequent de-identification.
 
     Args:
         filename: path to dicom image
@@ -61,7 +63,8 @@ def tag_all_dicoms_within_root_folder(
     day_shift: Dict[str, str],
     album_name: str
 ) -> None:
-    """Tag all dicom images located at the datapath for Karnak, adding an album name and patientCode private tags.
+    """Tag all dicom images located at the datapath for Karnak, adding an
+    album name and patientCode private tags.
 
     Args:
         data_path: path to the dicom images
@@ -150,7 +153,11 @@ def tag_all_dicoms_within_root_folder(
 def get_parser() -> argparse.ArgumentParser:
     """Get parser object for command line arguments of the script."""
     parser = argparse.ArgumentParser(
-        description="Add private DICOM tags to several studies so that Karnak can de-identify them using provided patient codes and route them to the appropriate Kheops album."
+        description=(
+            "Add private DICOM tags to several studies so that Karnak can "
+            "de-identify them using provided patient codes and route them to "
+            "the appropriate Kheops album."
+        )
     )
 
     parser.add_argument(
@@ -182,8 +189,8 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    data_path = os.path.normcase(os.path.abspath(args.in_folder))
-    new_ids_path = os.path.normcase(os.path.abspath(args.new_ids))
+    data_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.in_folder)))
+    new_ids_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.new_ids)))
     album_name = args.album_name
 
     if not os.path.isdir(data_path):
@@ -193,18 +200,19 @@ def main():
     if not os.path.isfile(new_ids_path):
         print(f"New IDs file ({new_ids_path}) not found. Please check!")
         sys.exit(1)
-    
+
     try:
         new_ids = json.load(open(new_ids_path, "r"))
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError:
         print(
             f"New IDs file ({new_ids_path}) is not a valid JSON file. "
-            "Please check it! \n {e}"
+            "Please check it!"
         )
         sys.exit(1)
 
     if args.day_shift is not None:
-        day_shift = json.load(open(args.day_shift, "r"))
+        day_shift_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.day_shift)))
+        day_shift = json.load(open(day_shift_path, "r"))
     else:
         day_shift = {}
 

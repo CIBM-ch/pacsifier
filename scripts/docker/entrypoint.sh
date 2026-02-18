@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018-2024 Lausanne University Hospital and University of Lausanne,
+# Copyright 2018-2026 Lausanne University Hospital and University of Lausanne,
 # Switzerland & Contributors
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,4 +15,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-conda run -n pacsifier_minimal "${@}"
+conda run --no-capture-output -n pacsifier_minimal "${@}"

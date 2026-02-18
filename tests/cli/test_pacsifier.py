@@ -18,13 +18,14 @@
 from glob import glob
 import json
 import os
-from pandas import read_csv
+from pandas import read_csv, DataFrame
 import pytest
 from functools import reduce
 import string
 import shutil
 from hypothesis import given, example
 from hypothesis.strategies import text
+from pathlib import Path
 
 from pacsifier.cli import (
     readLineByLine,
@@ -36,7 +37,9 @@ from pacsifier.cli import (
     add_or_retrieve_name,
     retrieve_dicoms_using_table,
     upload_dicoms,
+    ALLOWED_FILTERS,
 )
+import pacsifier.cli.pacsifier as pacsifier_cli
 
 
 def test_process_findscu_dump_file(test_dir):
@@ -100,7 +103,7 @@ def test_check_table(test_dir):
     valid_table = read_csv(
         os.path.join(test_dir, "test_data", "query", "query_file_valid.csv")
     ).fillna("")
-    assert check_query_table_allowed_filters(valid_table) == None
+    assert check_query_table_allowed_filters(valid_table) is None
 
 
 def test_parse_table(test_dir):
@@ -260,10 +263,144 @@ def test_upload_dicoms(test_dir):
     upload_dicoms(dicomseries_karnak_tags_dir, parameters)
 
 
+def _build_minimal_table():
+    """Create a minimal query table for resume tests."""
+    record = {field: "" for field in ALLOWED_FILTERS}
+    record.update(
+        {
+            "PatientID": "PACSMAN1",
+            "StudyDate": "20231016",
+            "SeriesDescription": "TestSeries",
+            "SeriesNumber": "1",
+            "StudyInstanceUID": "1.2.826.0.1.3680043.2.1125.1",
+            "SeriesInstanceUID": "1.2.826.0.1.3680043.2.1125.1.1",
+        }
+    )
+    return DataFrame([record], columns=ALLOWED_FILTERS)
+
+
+def _build_minimal_parameters():
+    return {
+        "server_address": "localhost",
+        "port": 4444,
+        "server_AET": "SCU_STORE",
+        "AET": "PACSIFIER_SCU",
+        "move_port": 11112,
+        "move_AET": "PACSIFIER_CLIENT",
+        "batch_wait_time": 0,
+        "batch_size": 1,
+    }
+
+
+def _mock_series_entry():
+    return [
+        {
+            "PatientID": "PACSMAN1",
+            "StudyDate": "20231016",
+            "StudyTime": "",
+            "SeriesDescription": "TestSeries",
+            "SeriesNumber": "1",
+            "StudyInstanceUID": "1.2.826.0.1.3680043.2.1125.1",
+            "SeriesInstanceUID": "1.2.826.0.1.3680043.2.1125.1.1",
+        }
+    ]
+
+
+class _DummyProgressBar:
+    def __call__(self, iterable):
+        return iterable
+
+
+def _setup_retrieve_mocks(monkeypatch, series_list, get_stub):
+    monkeypatch.setattr(pacsifier_cli, "echo", lambda **_: True)
+    monkeypatch.setattr(pacsifier_cli, "find", lambda *_, **__: "FIND")
+
+    def _fake_write_file(_results, file):
+        os.makedirs(os.path.dirname(file), exist_ok=True)
+        Path(file).write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(pacsifier_cli, "write_file", _fake_write_file)
+    monkeypatch.setattr(
+        pacsifier_cli, "parse_findscu_dump_file", lambda *_: series_list
+    )
+    monkeypatch.setattr(pacsifier_cli, "ProgressBar", _DummyProgressBar)
+    monkeypatch.setattr(pacsifier_cli, "get", get_stub)
+    monkeypatch.setattr(pacsifier_cli, "move_remote", lambda *_, **__: None)
+
+
+def _expected_series_dir(output_dir: Path) -> Path:
+    return (
+        output_dir
+        / "sub-PACSMAN1"
+        / "ses-20231016"
+        / "00001-TestSeries"
+    )
+
+
+def test_resume_skips_existing_series(monkeypatch, tmp_path):
+    table = _build_minimal_table()
+    parameters = _build_minimal_parameters()
+    output_dir = tmp_path / "out"
+    logs_dir = output_dir / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    series_dir = _expected_series_dir(output_dir)
+    series_dir.mkdir(parents=True, exist_ok=True)
+    (series_dir / "image_000.dcm").write_text("dummy", encoding="utf-8")
+
+    calls = []
+
+    def _fake_get(*args, **kwargs):
+        calls.append((args, kwargs))
+
+    _setup_retrieve_mocks(monkeypatch, _mock_series_entry(), _fake_get)
+
+    retrieve_dicoms_using_table(
+        table,
+        parameters,
+        str(output_dir),
+        save=True,
+        info=False,
+        move=False,
+        resume=True,
+    )
+
+    assert calls == []
+
+
+def test_resume_downloads_when_directory_empty(monkeypatch, tmp_path):
+    table = _build_minimal_table()
+    parameters = _build_minimal_parameters()
+    output_dir = tmp_path / "out"
+    (output_dir / "logs").mkdir(parents=True, exist_ok=True)
+
+    calls = []
+
+    def _fake_get(*args, **kwargs):
+        calls.append((args, kwargs))
+
+    _setup_retrieve_mocks(monkeypatch, _mock_series_entry(), _fake_get)
+
+    retrieve_dicoms_using_table(
+        table,
+        parameters,
+        str(output_dir),
+        save=True,
+        info=False,
+        move=False,
+        resume=True,
+    )
+
+    assert len(calls) == 1
+
+
 def test_check_output_info():
     pass
 
-    # pacsifier.main(["--info", "--queryfile test.csv", "--out_directory ./tests/test_set",  "--config ./files/config.json"])
+    # pacsifier.main([
+    #     "--info", "--queryfile test.csv", "--out_directory ./tests/test_set",
+    #     "--config ./files/config.json"
+    # ])
     # subjects = glob("./test_set/*")
     # sessions = glob("./test_set/sub-*/ses-*")
     # csv_files = glob("./test_set/sub-*/ses-*/*.csv")

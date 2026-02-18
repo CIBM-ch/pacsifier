@@ -4,4 +4,4 @@ See [original LICENSE](https://raw.githubusercontent.com/TranslationalML/PACSMAN
 
 All other data present in the `test_data` are distributed under Creative Commons Attribution 4.0 International Public License.
 
-See [original LICENSE](https://raw.githubusercontent.com/TranslationalML/PACSMAN/main/tests/test_data/LICENSE) for more details.
+See [original LICENSE](https://raw.githubusercontent.com/TranslationalML/PACSIFIER/main/tests/test_data/LICENSE) for more details.

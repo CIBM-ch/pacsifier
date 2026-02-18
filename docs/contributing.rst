@@ -75,7 +75,7 @@ Ready to contribute? Here's how to set up `PACSIFIER` for local development.
 6. Submit a pull request through the GitHub website.
 
    .. important::
-       Please make sure that the pull request is made against the ``dev`` branch. The ``master`` branch is used for the stable version releases of `PACSIFIER`.
+       Please make sure that the pull request is made against the ``main`` branch.
 
 Pull Request Guidelines
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -89,51 +89,47 @@ Before you submit a pull request, check that it meets these guidelines:
 CI/CD Pipeline: Under the Hood
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`PACSIFIER` uses CircleCI for continuous integration (CI) and continuous deployment (CD).
+``PACSIFIER`` uses `GitHub Actions <https://github.com/TranslationalML/pacsifier/actions>`_ for continuous integration (CI) and continuous deployment (CD).
 
-The pipeline, described by the file `.circleci/config.yml <https://github.com/TranslationalML/pacsifier/blob/master/.circleci/config.yml>`_, consists of the following stages:
+The CI/CD is defined by two workflow files in ``.github/workflows/``:
 
-    1. `test-install-python`: install Python and the dependencies of PACSIFIER in a Docker container.
+**build-test-deploy.yml** — Main pipeline
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    2. `build`: Build the Docker image of PACSIFIER. 
+This workflow runs on pull requests and releases. It performs the following steps:
 
-    3. `test`: Run the tests with pytest using the built Docker image. Send the coverage report to `codecov.io <https://codecov.io/gh/TranslationalML/pacsifier>`_ using the ``$CODECOV_TOKEN`` environment variable.
+    1. **Build**: Build the Docker image of PACSIFIER and the Python package wheel.
 
-    4. `clean`: Clean the Docker container.
+    2. **Test**: Run the pytest test suite using the built Docker image.
 
-    5. `semantic-release`: Make a version release of PACSIFIER with semantic-release. This updates the version tag of PACSIFIER, updates ``docs/CHANGES.md``, commits the changes, and creates a new tag on GitHub using ``$GH_TOKEN`` environment variable (TODO: might need to be adapted). The configuration of semantic-release is described by the file `.releaserc.json <https://github.com/TranslationalML/pacsifier/blob/master/.releaserc.json>`_. It uses the ``dev`` branch for beta releases and the ``master`` branch for stable releases.
+    3. **Validate**: Validate the ``.zenodo.json`` metadata file.
 
-    6. `deploy-release`: Build the Docker image with the new version of PACSIFIER and push it to Dockerhub_. This stage takes also care of pushing the changes and tags made by `semantic-release` stage to GitHub using SSH. A private key on CircleCI is read from ``$SSH_PRIVATE_KEY`` variable and set in ``.circleci/config.yml``.
+    4. **Deploy** (on release only):
 
-        .. _Dockerhub: https://hub.docker.com/repository/docker/translationalml/pacsifier
-
-Depending on the event, the pipeline will run all the stages of the CI/CD pipeline or only a subset of them.
-
-The diagram below shows the different stages of the pipeline and the events that trigger them:
+       * Publish the Python package to `PyPI <https://pypi.org/project/pacsifier/>`_.
+       * Push the Docker image to `Quay.io <https://quay.io/>`_.
 
 .. mermaid::
 
     graph LR
 
     subgraph "Stages"
-    test_python_install["test-python-install"]
-    build["build"]
-    test["test"]
-    clean["clean"]
-    semantic_release["semantic-release"]
-    deploy_release["deploy-release"]
+    build["Build Docker + wheel"]
+    test["Test (pytest)"]
+    validate["Validate .zenodo.json"]
+    deploy_pypi["Deploy to PyPI"]
+    deploy_docker["Push to Quay.io"]
     end
 
-    test_python_install --> build
     build --> test
-    test --> clean
-    clean -->|if $CI_COMMIT_REF_NAME == master or $CI_COMMIT_REF_NAME == dev| semantic_release
+    test --> validate
+    validate -->|on release| deploy_pypi
+    validate -->|on release| deploy_docker
 
-    semantic_release --> deploy_release
+**docs.yml** — Documentation pipeline
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-When a new branch is pushed on GitHub or a new commit is pushed to an existing branch (different than ``master`` or ``dev``) on GitHub, then only the stages `test-install-python`, `build`, `test`, `clean` are executed.
-
-When a Pull Request towards the ``dev`` and ``master`` branches is opened, updated, or merged on GitHub, then only the additional stages `semantic-release` and `deploy-release` are executed.
+This workflow builds the Sphinx documentation and deploys it to `GitHub Pages <https://translationalml.github.io/pacsifier>`_ on pushes to the ``main`` branch.
 
 
 Not listed as a contributor?

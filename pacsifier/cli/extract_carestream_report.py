@@ -15,7 +15,6 @@
 
 """Script to extract plain text from Carestream radiology reports in SR."""
 
-import io
 import re
 import os
 import pydicom
@@ -66,12 +65,16 @@ def replace_special_char_combinations(input_report, print_clean_report=False) ->
 
 
 def extract_txt_report(data_folder: str) -> None:
-    """This function loops over a BIDS-like (Brain Imaging Data Structure) dataset.
+    """This function loops over a BIDS-like (Brain Imaging Data Structure)
+    dataset.
 
-    If some SRc files are found, it converts them to txt files and saves them in the same directory.
+    If some SRc files are found, it converts them to txt files and saves them
+    in the same directory.
 
     Note:
-        The function assumes that each subject is stored as ``~/.../sub-XXXXXX/ses-YYYYYYYYYYYYY/00001-CarestreamPACSReports/SRc.x.x.x``.
+        The function assumes that each subject is stored as
+        ``~/.../sub-XXXXXX/ses-YYYYYYYYYYYYY/00001-CarestreamPACSReports/
+        SRc.x.x.x``.
 
     Args:
         data_folder (str): path to BIDS-like dataset
@@ -105,16 +108,20 @@ def extract_txt_report(data_folder: str) -> None:
                 else:
                     raise ValueError("No SOPInstanceUID attribute found")
 
-                # make sure that the input dicom file is a structured report, using the Modality dicom attribute
+                # make sure that the input dicom file is a structured report,
+                # using the Modality dicom attribute
                 if ds.Modality == "SR":
                     pass
                 elif ds.Modality == "":
                     raise TypeError(
-                        "Modality attribute, Tag (0008,0060), is empty, while it should be of type SR (Structured Report)."
+                        "Modality attribute, Tag (0008,0060), is empty, "
+                        "while it should be of type SR (Structured Report)."
                     )
                 elif ds.Modality != "SR" and ds.Modality != "":
                     raise TypeError(
-                        "Modality attribute, Tag (0008,0060), is not SR (Structured Report); this script is intended for SR dicom files."
+                        "Modality attribute, Tag (0008,0060), is not SR "
+                        "(Structured Report); this script is intended for SR "
+                        "dicom files."
                     )
 
                 if hasattr(
@@ -127,7 +134,8 @@ def extract_txt_report(data_folder: str) -> None:
                             if hasattr(ds.ContentSequence._list[3], "ContentSequence"):
                                 Potential_Text_Attribute = ds.ContentSequence._list[
                                     3
-                                ].ContentSequence  # create candidate variable for extracting the report
+                                ].ContentSequence  # create candidate
+                                # variable for extracting the report
                                 if hasattr(
                                     Potential_Text_Attribute, "_list"
                                 ):  # if attribute exists
@@ -142,11 +150,14 @@ def extract_txt_report(data_folder: str) -> None:
                                         )  # type: str  # temporary string variable
                                         if (
                                             "(0040, a160) Text Value" in tmp
-                                        ):  # check if specific string matches in our temporary variable
+                                        ):  # check if specific string matches
+                                            # in our temporary variable
                                             free_text = Potential_Text_Attribute._list[
                                                 idx
-                                            ].TextValue  # if it matches, save only Text Value content
-                                            break  # terminate for loop since we found what we were looking for
+                                            ].TextValue  # if it matches, save
+                                            # only Text Value content
+                                            break  # terminate for loop since
+                                            # we found what we were looking for
 
                                     if (
                                         free_text == ""
@@ -159,10 +170,12 @@ def extract_txt_report(data_folder: str) -> None:
                                     free_text,
                                     from_encoding="utf-8",
                                     features="html.parser",
-                                )  # type: BeautifulSoup  # create instance of BeautifulSoup class
+                                )  # type: BeautifulSoup  # create instance
+                                # of BeautifulSoup class
                                 cleaned_report = re.sub(
                                     r"[\n]+", r"\n", soup.text
-                                )  # type: str  # remove white space (white lines) in excess
+                                )  # type: str  # remove white space (white
+                                # lines) in excess
 
                                 # replace special characters with corresponding actual value
                                 cleaned_report = replace_special_char_combinations(
@@ -183,25 +196,31 @@ def extract_txt_report(data_folder: str) -> None:
                                 text_file.close()
                             else:
                                 print(
-                                    "WATCH OUT: report not found for {}_{}. ContentSequence._list[3] has no attribute ContentSequence".format(
+                                    "WATCH OUT: report not found for {}_{}. "
+                                    "ContentSequence._list[3] has no "
+                                    "attribute ContentSequence".format(
                                         sub_nb, ses_nb
                                     )
                                 )
                         else:
                             print(
-                                "WATCH OUT: report not found for {}_{}. ContentSequence_list has less than 4 elements".format(
+                                "WATCH OUT: report not found for {}_{}. "
+                                "ContentSequence_list has less than 4 "
+                                "elements".format(
                                     sub_nb, ses_nb
                                 )
                             )
                     else:
                         print(
-                            "WATCH OUT: report not found for {}_{}. ContentSequence has no attribute _list ".format(
+                            "WATCH OUT: report not found for {}_{}. "
+                            "ContentSequence has no attribute _list ".format(
                                 sub_nb, ses_nb
                             )
                         )
                 else:
                     print(
-                        "WATCH OUT: report not found for {}_{}. ContentSequence attribute does not exist".format(
+                        "WATCH OUT: report not found for {}_{}. "
+                        "ContentSequence attribute does not exist".format(
                             sub_nb, ses_nb
                         )
                     )
@@ -211,7 +230,8 @@ def get_parser() -> argparse.ArgumentParser:
     """Get parser object for command line arguments of the script.
 
     Note:
-        It is assumed that each subject is stored as ``~/.../sub-XXXXXX/ses-YYYYYYYYYYYYY/00001-CarestreamPACSReports``.
+        It is assumed that each subject is stored as
+        ``~/.../sub-XXXXXX/ses-YYYYYYYYYYYYY/00001-CarestreamPACSReports``.
 
     """
     parser = argparse.ArgumentParser(
@@ -239,7 +259,7 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    data_folder = args.data_folder
+    data_folder = os.path.normcase(os.path.abspath(os.path.expanduser(args.data_folder)))
     # data_folder = "/home/newuser/Downloads/tdn"  # type: str
 
     assert os.path.exists(data_folder), "Input path {} does not exist".format(

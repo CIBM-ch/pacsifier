@@ -35,8 +35,8 @@ def move(dicom_path: str, output_path: str) -> None:
     ls = glob(os.path.join(dicom_path, "sub-*", "ses-*", "*.csv"))
 
     # Iterate over all csv files paths.
-    for l in ls:
-        path = os.path.normpath(l)
+    for line in ls:
+        path = os.path.normpath(line)
         path = path.split(os.sep)
 
         # Create patient folder if not created yet.
@@ -51,7 +51,7 @@ def move(dicom_path: str, output_path: str) -> None:
             os.mkdir(subsubfolder)
 
         # Move the csv file into the session folder.
-        shutil.move(l, os.path.join(subsubfolder, path[-1]))
+        shutil.move(line, os.path.join(subsubfolder, path[-1]))
 
     if os.path.isfile(os.path.join(dicom_path, "mapper.json")):
         shutil.move(
@@ -87,8 +87,8 @@ def main():
         parser.print_help()
         sys.exit()
 
-    dicom_path = args.data_folder
-    output_path = args.info_folder
+    dicom_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.data_folder)))
+    output_path = os.path.normcase(os.path.abspath(os.path.expanduser(args.info_folder)))
 
     # Move csv files within dicom_path within output_path
     move(dicom_path, output_path)

@@ -18,7 +18,6 @@
 import os
 import random
 import shutil
-import sys
 import pytest
 
 import pydicom
@@ -178,11 +177,7 @@ def test_anonymize(test_dir):
     )
 
     dataset = pydicom.read_file(out_file_new_age)
-    # WARNING: 90+Y is not a valid DICOM age value
-    # This might have to be fixed in anonymize_dicom_file()
-    # in the future.
-    # For now, this raises a Warning in the test.
-    assert dataset.PatientAge == "90+Y"
+    assert dataset.PatientAge == "90Y"
 
 
 def test_anonymize_all_dicoms_within_folder(test_dir):
@@ -190,7 +185,7 @@ def test_anonymize_all_dicoms_within_folder(test_dir):
     dicom_dir = os.path.join(test_dir, "test_data", "dicomseries")
     pacsifier_dir = os.path.join(test_dir, "tmp", "test_data", "dicomseries_structured")
     structured_series_dir = os.path.join(
-        pacsifier_dir, "sub-PACSIFIER1", "ses-20232016", "00000-No_series_description"
+        pacsifier_dir, "sub-PACSMAN1", "ses-20232016", "00000-No_series_description"
     )
     anonymization_dir = os.path.join(
         test_dir, "tmp", "test_data", "dicomseries_structured_anon"
@@ -214,4 +209,4 @@ def test_anonymize_all_dicoms_within_folder(test_dir):
         pattern_dicom_files=os.path.join("ses-*", "*", "*.dcm"),
         rename_patient_directories=False,
     )
-    assert dict_ == {"000001": "PACSIFIER1"}
+    assert dict_ == {"000001": "PACSMAN1"}

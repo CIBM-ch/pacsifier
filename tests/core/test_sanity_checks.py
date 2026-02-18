@@ -39,16 +39,16 @@ def test_check_config_parameters_invalid():
 
 def test_check_config_parameters_valid():
     check_config_parameters({
-            "server_address": "localhost",
-            "port": 4444,
-            "server_AET": "SCU_STORE",
-            "AET": "PACSIFIER_SCU",
-            "move_port": 11112,
-            "move_AET": "PACSIFIER_SCU",
-            "batch_size": 30,
-            "batch_wait_time": 10
-        })
-    
+        "server_address": "localhost",
+        "port": 4444,
+        "server_AET": "SCU_STORE",
+        "AET": "PACSIFIER_SCU",
+        "move_port": 11112,
+        "move_AET": "PACSIFIER_SCU",
+        "batch_size": 30,
+        "batch_wait_time": 10
+    })
+
 
 def test_check_config_parameters_invalid_values():
     with pytest.raises(ValueError):
@@ -92,7 +92,10 @@ def test_check_query_retrieval_level():
 
 
 def test_sanity_checks():
-    dummy_long_string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    dummy_long_string = (
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    )
     with pytest.raises(ValueError):
         check_server_address("California Dreaming")
 
@@ -174,10 +177,10 @@ def test_sanity_checks():
     with pytest.raises(ValueError):
         check_date("dakdjak")
 
-    assert check_date("") == None
-    assert check_date("20180825") == None
-    assert check_date_range("") == None
-    assert check_date_range("20180825") == None
+    assert check_date("") is None
+    assert check_date("20180825") is None
+    assert check_date_range("") is None
+    assert check_date_range("20180825") is None
 
     with pytest.raises(ValueError):
         check_date_range("18930402-20180722")

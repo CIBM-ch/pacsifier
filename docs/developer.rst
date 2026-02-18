@@ -34,14 +34,14 @@ How to install ``PACSIFIER`` locally
 
 2. Install the Python environment with `PACSIFIER` and its dependencies.
 
-2.1 It is recommended to use a virtual environment to install `PACSIFIER` and its dependencies, which can be achieved using `venv`_ or `conda`_. For convenience, a minimal `conda` environment is provided in the `environment` directory of the repository. It can be installed as follow:
+   It is recommended to use a virtual environment, which can be created using `venv`_ or `conda`_. For convenience, a minimal `conda` environment is provided in the `environment` directory of the repository. It can be installed as follows:
 
     .. code-block:: bash
 
-        conda create env -f environment/environment_minimal_202301.yml
+        conda env create -f environment/environment_minimal_202401.yml
         conda activate pacsifier_minimal
 
-    If you prefer to use `venv`, you can create a virtual environment and activate it as follow::
+   If you prefer to use `venv`, you can create a virtual environment and activate it as follows::
 
         python3 -m venv venv
         source venv/bin/activate            
@@ -49,13 +49,11 @@ How to install ``PACSIFIER`` locally
 .. important::
     `PACSIFIER` requires a Python environment with `python>=3.10`.
 
-2.2 Once the virtual environment is activated, `PACSIFIER` can be installed with the following command:
-
-2. Install `PACSIFIER` along with all its Python dependencies (including dependencies to build the documentation and to test the package)::
+3. Once the virtual environment is activated, install `PACSIFIER` along with all its Python dependencies (including dependencies to build the documentation and to test the package)::
 
     pip install -e .[all]
 
-   or ::
+   or on some shells where brackets need escaping::
 
     pip install -e .\[all\]
 
@@ -69,7 +67,7 @@ Go to the cloned repository and run the following `make` command::
 
     make -B build-docs
 
-This will re-install PACSIFIER's python package, clean any existing documentation, and build the documentation in the `docs/build/html` directory.
+This will re-install PACSIFIER's python package, clean any existing documentation, and build the documentation in the `docs/_build/html` directory.
 
 The built HTML files of the documentation, including its main page (``index.html``), can be found in the ``docs/_build/html`` directory, and can be opened in your favorite browser.
 

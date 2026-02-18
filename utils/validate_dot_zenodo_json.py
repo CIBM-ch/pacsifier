@@ -22,9 +22,10 @@ it is compliant with the Zenodo metadata schema before we make a new release.
 
 Example:
 
-    $ python utils/validate_dot_zenodo_json.py \
-        --zenodo-json .zenodo.json \
-        --zenodo-schema https://raw.githubusercontent.com/zenodraft/metadata-schema-zenodo/main/schema.json
+    $ python utils/validate_dot_zenodo_json.py \\
+        --zenodo-json .zenodo.json \\
+        --zenodo-schema https://raw.githubusercontent.com/zenodraft/\\
+        metadata-schema-zenodo/main/schema.json
 
 """
 
@@ -44,13 +45,18 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--zenodo-json",
         type=str,
-        default=os.path.join(os.path.dirname(__file__), "..", ".zenodo.json"),
+        default=os.path.join(
+            os.path.dirname(__file__), "..", ".zenodo.json"
+        ),
         help="Path to the `.zenodo.json` file to validate.",
     )
     parser.add_argument(
         "--zenodo-schema",
         type=str,
-        default="https://raw.githubusercontent.com/zenodraft/metadata-schema-zenodo/main/schema.json",
+        default=(
+            "https://raw.githubusercontent.com/zenodraft/"
+            "metadata-schema-zenodo/main/schema.json"
+        ),
         help="URL or path to the json schema to use for validation.",
     )
     return parser
@@ -100,7 +106,7 @@ def main():
             sys.exit(1)
 
     # Validate the .zenodo.json file
-    print(f'Validating...\n')
+    print('Validating...\n')
     print(json.dumps(zenodo_json, indent=2))
     print('\n')
     try:
@@ -109,7 +115,7 @@ def main():
         print(f'Validation failed:\n\n{e}')
         sys.exit(1)
     print('Congrats! Validation of the .zenodo.json file successful!')
-    
+
 
 if __name__ == "__main__":
     main()

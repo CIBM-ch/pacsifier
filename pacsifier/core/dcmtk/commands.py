@@ -15,7 +15,6 @@
 
 """This module contains functions to execute DCMTK commands."""
 
-from datetime import date
 import os
 import warnings
 import shlex
@@ -43,9 +42,9 @@ STUDY_INSTANCE_UID, SERIES_INSTANCE_UID, OUTPUT_DIR = (
 )
 PARAMETERS = "88.202.185.144 104 -aec theServerAET -aet MY_AET"
 
-########################################################################################################################
-########################################################FUNCTIONS#######################################################
-########################################################################################################################
+##############################################################################
+# FUNCTIONS
+##############################################################################
 
 
 def echo(
@@ -77,7 +76,10 @@ def echo(
     check_AET(server_aet, server=True)
     check_AET(aet)
 
-    echo_command = f'echoscu -ll trace --timeout {timeout} -aec "{server_aet}" -aet "{aet}" {server_address} {port}'
+    echo_command = (
+        f'echoscu -ll debug --timeout {timeout} -aec "{server_aet}" '
+        f'-aet "{aet}" {server_address} {port}'
+    )
 
     return run(
         query=echo_command,
@@ -108,7 +110,8 @@ def find(
     sequence_name: str = "",
     log_dir: str = os.path.join(OUTPUT_DIR, "logs"),
 ) -> str:
-    """Builds a query for findscu of QueryRetrieveLevel of series using the parameters passed as arguments.
+    """Builds a query for findscu of QueryRetrieveLevel of series using the
+    parameters passed as arguments.
 
     Args:
         aet: called AET.
@@ -153,12 +156,18 @@ def find(
 
     find_command = (
         f"findscu -v {modified_params} --study "
-        f"-k QueryRetrieveLevel={query_retrieval_level} -k 0010,0020={patient_id} "
-        f"-k 20,11 -k 10,10 -k 10,1010 -k 0020,000d={study_uid} --key 0020,000e={series_instance_uid} "
-        f"--key 0008,103E={series_description} --key 18,1030={protocol_name} --key 8,22={acquisition_date} "
-        f"--key 0008,0020={study_date} --key 0010,0010={patient_name} --key 10,30={patient_birthdate} "
-        f"--key 8,30 --key 18,1000={device_serial_number} --key 8,60={modality} --key 8,8={image_type} "
-        f"--key 8,1030={study_description} --key 8,50={accession_number} --key 18,24={sequence_name}"
+        f"-k QueryRetrieveLevel={query_retrieval_level} "
+        f"-k 0010,0020={patient_id} "
+        f"-k 20,11 -k 10,10 -k 10,1010 -k 0020,000d={study_uid} "
+        f"--key 0020,000e={series_instance_uid} "
+        f"--key 0008,103E={series_description} "
+        f"--key 18,1030={protocol_name} --key 8,22={acquisition_date} "
+        f"--key 0008,0020={study_date} --key 0010,0010={patient_name} "
+        f"--key 10,30={patient_birthdate} "
+        f"--key 8,30 --key 18,1000={device_serial_number} "
+        f"--key 8,60={modality} --key 8,8={image_type} "
+        f"--key 8,1030={study_description} --key 8,50={accession_number} "
+        f"--key 18,24={sequence_name}"
     )
 
     return run(
@@ -388,7 +397,7 @@ def run(query: str, log_dir: str = ".") -> str:
         cmd = shlex.split(query.replace("\\", "\\\\"))
         with open(os.path.join(log_dir, "log.txt"), "a") as f:
             f.write(query + "\n")
-    except ValueError as e:
+    except ValueError:
         print("* Command parsing error: {}".format(" ".join(cmd)))
         exit()
 

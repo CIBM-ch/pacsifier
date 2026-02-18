@@ -93,7 +93,7 @@ clean-test:
 #bash: @ Run bash in the container
 .PHONY: bash
 bash:
-	@echo "Running pytest tests..."
+	@echo "Running bash in the container..."
 	docker run -it --rm \
 		--entrypoint "/bin/bash" \
 		-v $(PROJECT_DIR)/tests:/tests \

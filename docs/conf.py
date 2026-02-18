@@ -26,8 +26,10 @@ class CustomCommonMarkParser(CommonMarkParser):
 # -- General project information -------------------------------------------
 
 project = "PACSIFIER: batch DICOM query/retrieve tool for PACS systems"
-copyright = "2018-{}, The Translational Machine Learning Lab team, Lausanne University Hospital and University of Lausanne, Switzerland & Contributors".format(
-    time.strftime("%Y")
+copyright = (
+    "2018-{}, The Translational Machine Learning Lab team, "
+    "Lausanne University Hospital and University of Lausanne, "
+    "Switzerland & Contributors".format(time.strftime("%Y"))
 )
 author = "Translational Machine Learning Lab Team"
 
@@ -226,7 +228,12 @@ html_last_updated_fmt = "%b %d, %Y"
 # html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-# html_sidebars = {'**': ['sidebar_version.html', 'localtoc.html','relations.html', 'sourcelink.html', 'searchbox.html']}
+# html_sidebars = {
+#     '**': [
+#         'sidebar_version.html', 'localtoc.html', 'relations.html',
+#         'sourcelink.html', 'searchbox.html'
+#     ]
+# }
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
@@ -265,6 +272,7 @@ html_context = {"release_date": __release_date__}
 
 # Activate autosectionlabel plugin
 autosectionlabel_prefix_document = True
+autosectionlabel_maxdepth = 2
 
 # -- Options for LaTeX output --------------------------------------------------
 

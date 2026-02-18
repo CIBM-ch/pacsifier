@@ -65,7 +65,10 @@ def test_move_and_rename_files(test_dir):
     # Such that the first file has SeriesNumber 1
     # This is required for the DICOMDIR creation. Otherwise dcmmkdir --recurse ./ will fail.
     # StudyID and StudyTime are set arbitrarily.
-    series_path = os.path.join(dicom_path, "sub-PACSIFIER1", "ses-20232016", "00000-No_series_description")
+    series_path = os.path.join(
+        dicom_path, "sub-PACSMAN1", "ses-20232016",
+        "00000-No_series_description"
+    )
     for i, file in enumerate(sorted(glob(os.path.join(series_path, "*.dcm")))):
         dataset = pydicom.read_file(file)
         dataset.StudyID = "12345678"
