@@ -8,10 +8,12 @@ Welcome to PACSIFIER's documentation!
 
 This radiological PACS data management software is developed by the Translational Machine Learning Lab team at the Lausanne University Hospital and University of Lausanne for use within the hospital, as well as for open-source software distribution.
 
-.. image:: https://img.shields.io/github/v/release/TranslationalML/pacsifier
-  :alt: Latest GitHub Release
-.. image:: https://img.shields.io/github/release-date/TranslationalML/pacsifier
-  :alt: GitHub Release Date
+.. image:: https://img.shields.io/github/actions/workflow/status/TranslationalML/pacsifier/build-test-deploy.yml?branch=master&label=build
+  :alt: Build Status
+  :target: https://github.com/TranslationalML/pacsifier/actions/workflows/build-test-deploy.yml
+.. image:: https://img.shields.io/github/actions/workflow/status/TranslationalML/pacsifier/docs.yml?branch=master&label=docs
+  :alt: Docs Status
+  :target: https://github.com/TranslationalML/pacsifier/actions/workflows/docs.yml
 
 
 Introduction

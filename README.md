@@ -2,11 +2,16 @@
 
 PACSIFIER is an open-source tool written in Python to query, retrieve, and edit data in DICOM format from a radiological PACS server. It can be run directly or via a Docker container.
 
-[![Latest GitHub Release](https://img.shields.io/github/v/release/TranslationalML/pacsifier)](https://github.com/TranslationalML/pacsifier/releases)
-[![GitHub Release Date](https://img.shields.io/github/release-date/TranslationalML/pacsifier)](https://github.com/TranslationalML/pacsifier/releases)
-[![License](https://img.shields.io/github/license/TranslationalML/pacsifier)](https://github.com/TranslationalML/pacsifier/blob/main/LICENSE)
+[![Build](https://img.shields.io/github/actions/workflow/status/TranslationalML/pacsifier/build-test-deploy.yml?branch=master&label=build)](https://github.com/TranslationalML/pacsifier/actions/workflows/build-test-deploy.yml)
+[![Docs](https://img.shields.io/github/actions/workflow/status/TranslationalML/pacsifier/docs.yml?branch=master&label=docs)](https://github.com/TranslationalML/pacsifier/actions/workflows/docs.yml)
+[![License](https://img.shields.io/github/license/TranslationalML/pacsifier)](https://github.com/TranslationalML/pacsifier/blob/master/LICENSE)
 [![Python Version](https://img.shields.io/badge/python-%3E%3D3.10-blue)](https://www.python.org/)
 [![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://translationalml.github.io/pacsifier)
+
+<!-- Uncomment these once you publish a GitHub Release:
+[![Latest GitHub Release](https://img.shields.io/github/v/release/TranslationalML/pacsifier)](https://github.com/TranslationalML/pacsifier/releases)
+[![GitHub Release Date](https://img.shields.io/github/release-date/TranslationalML/pacsifier)](https://github.com/TranslationalML/pacsifier/releases)
+-->
 
 > **Full documentation**: [https://translationalml.github.io/pacsifier](https://translationalml.github.io/pacsifier)
 
@@ -29,7 +34,7 @@ docker run --rm --net=host \
     -v /path/to/my_dir:/base \
     quay.io/translationalml/pacsifier:latest \
     pacsifier --save --info --queryfile /base/my_query.csv \
-        --config /base/my_config.json --out_directory /base/my_output_dir
+    --config /base/my_config.json --out_directory /base/my_output_dir
 ```
 
 > **Tip:** You can pin to a specific version (e.g. `pacsifier:1.0.0`) instead of `latest`. See [available tags on Quay.io](https://quay.io/repository/translationalml/pacsifier?tab=tags).

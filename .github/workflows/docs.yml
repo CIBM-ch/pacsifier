@@ -1,20 +1,23 @@
 name: Build and Deploy Documentation
 
 on:
+  workflow_dispatch:
   push:
     branches:
-      - main
+      - master
     paths:
       - 'docs/**'
       - 'pacsifier/**'
       - 'setup.cfg'
       - 'setup.py'
+      - 'pyproject.toml'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
       - 'docs/**'
       - 'pacsifier/**'
       - 'setup.cfg'
+      - 'pyproject.toml'
       - '.github/workflows/docs.yml'
 
 permissions:
@@ -50,13 +53,13 @@ jobs:
           make -B html
 
       - name: Upload artifact
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/html
 
   deploy-docs:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs: build-docs
     runs-on: ubuntu-22.04
     environment:
