@@ -229,7 +229,7 @@ def anonymize_dicom_file(
             if age != "":
                 if int(age[:3]) > 89:
                     ninety_plus = True
-                    dataset.PatientAge = "90+Y"
+                    dataset.PatientAge = "90Y"
                     dataset.PatientBirthDate = "19010101"
         except AttributeError:
             pass
