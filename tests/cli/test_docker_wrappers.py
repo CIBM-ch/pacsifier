@@ -36,7 +36,7 @@ from pacsifier.cli.docker_wrappers import (
 def test_get_docker_image_name_default():
     """Test that get_docker_image_name returns default when env var not set."""
     with patch.dict(os.environ, {}, clear=True):
-        assert get_docker_image_name() == 'pacsifier:latest'
+        assert get_docker_image_name() == 'quay.io/translationalml/pacsifier:latest'
 
 
 def test_get_docker_image_name_from_env():
@@ -63,7 +63,7 @@ def test_run_docker_command_basic(mock_run, tmp_path):
     assert 'PYTHONUNBUFFERED=1' in call_args  # Python unbuffered output
     assert '-v' in call_args
     assert '/host:/container' in call_args
-    assert 'pacsifier:latest' in call_args
+    assert 'quay.io/translationalml/pacsifier:latest' in call_args
     assert 'pacsifier' in call_args
     assert '-c' in call_args
     assert '/config.json' in call_args
@@ -126,7 +126,7 @@ def test_run_docker_command_python_unbuffered_position(mock_run):
     # Find positions of key elements
     e_flag_index = call_args.index('-e')
     pyunbuf_index = call_args.index('PYTHONUNBUFFERED=1')
-    image_index = call_args.index('pacsifier:latest')
+    image_index = call_args.index('quay.io/translationalml/pacsifier:latest')
 
     # PYTHONUNBUFFERED should come right after -e
     assert pyunbuf_index == e_flag_index + 1
