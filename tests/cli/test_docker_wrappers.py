@@ -16,6 +16,7 @@
 """Tests for the docker wrapper scripts in `pacsifier.cli.docker_wrappers`."""
 
 import os
+import sys
 import pytest
 import subprocess
 from unittest.mock import patch, MagicMock
@@ -143,15 +144,20 @@ def test_run_docker_command_interactive_flag_position(mock_run):
 
     call_args = mock_run.call_args[0][0]
 
-    # Verify the order: docker, run, --rm, --net=host, -i, -e, PYTHONUNBUFFERED=1
+    # Verify the order: docker, run, --rm, --net=host, -i, [-t if tty], -e, PYTHONUNBUFFERED=1
     assert call_args[0] == 'docker'
     assert call_args[1] == 'run'
     assert call_args[2] == '--rm'
     assert call_args[3] == '--net=host'
-    assert call_args[4] == '-i'  # Interactive flag should be here
-    assert call_args[5] == '-t'  # Environment variable flag
-    assert call_args[6] == '-e'
-    assert call_args[7] == 'PYTHONUNBUFFERED=1'  # Environment variable value
+    assert call_args[4] == '-i'
+    # -t is only present when stdout is a TTY; in test environments it is not
+    if sys.stdout.isatty():
+        assert call_args[5] == '-t'
+        assert call_args[6] == '-e'
+        assert call_args[7] == 'PYTHONUNBUFFERED=1'
+    else:
+        assert call_args[5] == '-e'
+        assert call_args[6] == 'PYTHONUNBUFFERED=1'
 
 
 @patch('pacsifier.cli.docker_wrappers.run_docker_command')
